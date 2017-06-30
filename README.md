@@ -1,18 +1,22 @@
-# OpenFace: an open source facial behavior analysis toolkit
-
-[![Build Status](https://travis-ci.org/TadasBaltrusaitis/OpenFace.svg?branch=master)](https://travis-ci.org/TadasBaltrusaitis/OpenFace)
-[![Build status](https://ci.appveyor.com/api/projects/status/8msiklxfbhlnsmxp/branch/master?svg=true)](https://ci.appveyor.com/project/TadasBaltrusaitis/openface/branch/master)
-
-Over the past few years, there has been an increased interest in automatic facial behavior analysis and understanding. We present OpenFace – an open source tool intended for computer vision and machine learning researchers, affective computing community and people interested in building interactive applications based on facial behavior analysis. OpenFace is the ﬁrst open source tool capable of facial landmark detection, head pose estimation, facial action unit recognition, and eye-gaze estimation. The computer vision algorithms which represent the core of OpenFace demonstrate state-of-the-art results in all of the above mentioned tasks. Furthermore, our tool is capable of real-time performance and is able to run from a simple webcam without any specialist hardware.
-
-The code was written mainly by Tadas Baltrusaitis during his time at the Language Technologies Institute at the Carnegie Mellon University; Computer Laboratory, University of Cambridge; and Institute for Creative Technologies, University of Southern California.
-
-Special thanks goes to Louis-Philippe Morency and his MultiComp Lab at Institute for Creative Technologies for help in writing and testing the code, and Erroll Wood for the gaze estimation work.
+# OpenFace + OSC Client
 
 ## WIKI
+This is a forked version of "OpenFace: an open source facial behavior analysis toolkit" - https://github.com/TadasBaltrusaitis/OpenFace
+
 **For instructions of how to install/compile/use the project please see [WIKI](https://github.com/TadasBaltrusaitis/OpenFace/wiki)**
 
 More details about the project - http://www.cl.cam.ac.uk/research/rainbow/projects/openface/
+
+This Versoin is adding an OSC client so the project is easier to interface with OSC based projects.
+
+#OSC Functionality
+
+The OSC client is incorporated into the "FaceLandmarkVid" Project
+The face landmark data, gaze data and pose data is sent to the localhost "127.0.0.1"
+over port 6448
+channel "/openFace/allData"
+
+You can use OSCdata monitor for an easy data peview (make sure to add port 6448): https://www.kasperkamperman.com/blog/osc-datamonitor/
 
 ## Functionality
 
@@ -38,16 +42,6 @@ The system is capable of performing a number of facial analysis tasks:
 - Facial Feature Extraction (aligned faces and HOG features)
 
 ![Sample aligned face and HOG image](https://github.com/TadasBaltrusaitis/OpenFace/blob/master/imgs/appearance.png)
-
-## Citation
-
-If you use any of the resources provided on this page in any of your publications we ask you to cite the following work and the work for a relevant submodule you used.
-
-#### Overall system
-
-**OpenFace: an open source facial behavior analysis toolkit**
-Tadas Baltrušaitis, Peter Robinson, and Louis-Philippe Morency,
-in *IEEE Winter Conference on Applications of Computer Vision*, 2016  
 
 #### Facial landmark detection and tracking
 

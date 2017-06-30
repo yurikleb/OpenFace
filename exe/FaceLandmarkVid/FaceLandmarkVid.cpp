@@ -50,6 +50,20 @@
 #include <filesystem.hpp>
 #include <filesystem/fstream.hpp>
 
+//OSC Includes
+#include "osc/OscOutboundPacketStream.h"
+#include "ip/UdpSocket.h"
+
+//OSC Settings
+#define ADDRESS "127.0.0.1"
+#define PORT 6448
+#define OUTPUT_BUFFER_SIZE 2500
+
+UdpTransmitSocket transmitSocket(IpEndpointName(ADDRESS, PORT));
+
+char buffer[OUTPUT_BUFFER_SIZE];
+osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
+
 #define INFO_STREAM( stream ) \
 std::cout << stream << std::endl
 
@@ -96,7 +110,7 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 
 	double visualisation_boundary = 0.2;
 
-	// Only draw if the reliability is reasonable, the value is slightly ad-hoc
+	// Only draw + send data over OSC if the reliability is reasonable, the value is slightly ad-hoc
 	if (detection_certainty < visualisation_boundary)
 	{
 		LandmarkDetector::Draw(captured_image, face_model);
@@ -117,10 +131,36 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 		// Draw it in reddish if uncertain, blueish if certain
 		LandmarkDetector::DrawBox(captured_image, pose_estimate_to_draw, cv::Scalar((1 - vis_certainty)*255.0, 0, vis_certainty * 255), thickness, fx, fy, cx, cy);
 		
+		//Draw Gaze
 		if (det_parameters.track_gaze && detection_success && face_model.eye_model)
 		{
 			FaceAnalysis::DrawGaze(captured_image, face_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
 		}
+
+		//Send data via OSC ( 3 gaze coords + 136 landmarks = 142 data points) 
+		p.Clear();
+		
+		//Gaze vectors
+		p << osc::BeginBundleImmediate
+			<< osc::BeginMessage("/openFace/allData")
+			<< gazeDirection0.x << gazeDirection0.y << gazeDirection0.z
+			<< gazeDirection1.x << gazeDirection1.y << gazeDirection1.z;
+
+		//Head pose landmarks
+		for (int i = 0; i < 6; i++) {
+			p << (float)pose_estimate_to_draw[i];
+		}
+
+		//Face landmark
+		for (int i = 0; i < face_model.detected_landmarks.rows; i++) {
+					p << (float)face_model.detected_landmarks[i][0];
+		}
+
+		p << osc::EndMessage
+			<< osc::EndBundle;
+
+		transmitSocket.Send(p.Data(), p.Size());
+
 	}
 
 	// Work out the framerate
@@ -154,6 +194,10 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 
 int main (int argc, char **argv)
 {
+	//OSC INIT
+	(void)argc; // suppress unused parameter warnings
+	(void)argv; // suppress unused parameter warnings
+	INFO_STREAM("OSC Client Online!");
 
 	vector<string> arguments = get_arguments(argc, argv);
 
