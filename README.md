@@ -16,6 +16,8 @@ The face landmark data, gaze data and pose data is sent to the localhost "127.0.
 over port 6448
 channel "/openFace/allData"
 
+if visual studio throw an import error, make sure the project settins match the screenshots in the "./osc_settings" folder
+
 You can use OSCdata monitor for an easy data peview (make sure to add port 6448): https://www.kasperkamperman.com/blog/osc-datamonitor/
 
 ## Functionality
