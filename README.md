@@ -9,7 +9,7 @@ More details about the project - http://www.cl.cam.ac.uk/research/rainbow/projec
 
 This Versoin is adding an OSC client so the project is easier to interface with OSC based projects.
 
-#OSC Functionality
+## OSC Functionality
 
 The OSC client is incorporated into the "FaceLandmarkVid" Project
 The face landmark data, gaze data and pose data is sent to the localhost "127.0.0.1"
