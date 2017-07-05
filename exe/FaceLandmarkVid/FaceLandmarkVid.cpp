@@ -113,6 +113,8 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 	// Only draw + send data over OSC if the reliability is reasonable, the value is slightly ad-hoc
 	if (detection_certainty < visualisation_boundary)
 	{
+		
+		//Draw Face Landmarks
 		LandmarkDetector::Draw(captured_image, face_model);
 
 		double vis_certainty = detection_certainty;
@@ -142,18 +144,21 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 		
 		//Gaze vectors
 		p << osc::BeginBundleImmediate
-			<< osc::BeginMessage("/openFace/allData")
-			<< gazeDirection0.x << gazeDirection0.y << gazeDirection0.z
-			<< gazeDirection1.x << gazeDirection1.y << gazeDirection1.z;
+			<< osc::BeginMessage("/openFace/allData");
+			//<< gazeDirection0.x << gazeDirection0.y << gazeDirection0.z
+			//<< gazeDirection1.x << gazeDirection1.y << gazeDirection1.z;
 
-		//Head pose landmarks
-		for (int i = 0; i < 6; i++) {
-			p << (float)pose_estimate_to_draw[i];
-		}
+		//Head pose vector
+		//for (int i = 0; i < 6; i++) {
+		//	p << (float)pose_estimate_to_draw[i];
+		//}
 
-		//Face landmark
+		//Camera Data
+		//p << (float)fx << (float)fy << (float)cx << (float)cy;
+
+		//Face landmarks
 		for (int i = 0; i < face_model.detected_landmarks.rows; i++) {
-					p << (float)face_model.detected_landmarks[i][0];
+			p << (float)face_model.detected_landmarks[i][0];
 		}
 
 		p << osc::EndMessage
