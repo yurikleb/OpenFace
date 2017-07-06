@@ -1051,7 +1051,7 @@ vector<cv::Point2d> CalculateLandmarks(CLNF& clnf_model)
 void Draw(cv::Mat img, const cv::Mat_<double>& shape2D, const cv::Mat_<int>& visibilities)
 {
 	int n = shape2D.rows/2;
-	
+	//printf("n:%d \n", n);
 
 	// Drawing feature points
 	if(n >= 66)
@@ -1061,6 +1061,7 @@ void Draw(cv::Mat img, const cv::Mat_<double>& shape2D, const cv::Mat_<int>& vis
 			if(visibilities.at<int>(i))
 			{
 				cv::Point featurePoint(cvRound(shape2D.at<double>(i) * (double)draw_multiplier), cvRound(shape2D.at<double>(i + n) * (double)draw_multiplier));
+				//printf("x:%d y:%d multiplier:%d \n", featurePoint.x, featurePoint.y, draw_multiplier);
 
 				// A rough heuristic for drawn point size
 				int thickness = (int)std::ceil(3.0* ((double)img.cols) / 640.0);
