@@ -16,6 +16,7 @@ float[][] lEyeLandmarks = new float[eyeArrayCols][landmarkDimensions];
 PVector[] rEyeGazeVec = new PVector[2];
 PVector[] lEyeGazeVec = new PVector[2];
 
+float[] headPose = new float[6];
 
 float midX,midY,midZ;
 
@@ -52,15 +53,14 @@ void setup() {
 void draw() {
 
   background(0);
-  fill(100);
+  fill(200);
   noStroke();
   
   translate(midX, midY, midZ);  
   //Draw Face landmarks
   for (int i = 0; i < faceArrayCols; i++) {
     pushMatrix();
-    translate(faceLandmarks[i][0], faceLandmarks[i][1]  , faceLandmarks[i][2] * -1); 
-    //text(i, 0, 0);
+    translate(faceLandmarks[i][0], faceLandmarks[i][1]  , -faceLandmarks[i][2]); 
     sphere(0.5);
     popMatrix();
   }
@@ -70,24 +70,24 @@ void draw() {
   drawEye(lEyeLandmarks, color(0,255,0));
   
   //Draw Gaze
-  //println("Gaze Vec: " + rEyeGazeVec[0] + " / " + rEyeGazeVec[1]);
   noFill();
   stroke(255);
-  beginShape();
   pushMatrix();
-  vertex(rEyeGazeVec[0].x, rEyeGazeVec[0].y, rEyeGazeVec[0].z  * -1);
-  vertex(rEyeGazeVec[1].x, rEyeGazeVec[1].y, rEyeGazeVec[1].z * -1);
-  vertex(rEyeGazeVec[0].x, rEyeGazeVec[0].y, rEyeGazeVec[0].z  * -1);
+  line(lEyeGazeVec[0].x, lEyeGazeVec[0].y, -lEyeGazeVec[0].z, lEyeGazeVec[1].x, lEyeGazeVec[1].y, -lEyeGazeVec[1].z);
+  line(rEyeGazeVec[0].x, rEyeGazeVec[0].y, -rEyeGazeVec[0].z, rEyeGazeVec[1].x, rEyeGazeVec[1].y, -rEyeGazeVec[1].z);
   popMatrix();
-  endShape();
+ 
+  //Draw head pose
+  pushMatrix();
+  translate(headPose[0], headPose[1], -headPose[2]);
+  rotateX(-headPose[3]);
+  rotateY(-headPose[4]);
+  rotateZ(headPose[5]);  
+  noFill();
+  stroke(100,0,100);
+  box(150);
+  popMatrix();
   
-  beginShape();
-  pushMatrix();
-  vertex(lEyeGazeVec[0].x, lEyeGazeVec[0].y, lEyeGazeVec[0].z  * -1);
-  vertex(lEyeGazeVec[1].x, lEyeGazeVec[1].y, lEyeGazeVec[1].z * -1);
-  vertex(lEyeGazeVec[0].x, lEyeGazeVec[0].y, lEyeGazeVec[0].z  * -1);
-  popMatrix();
-  endShape();  
 
 }
 
@@ -101,39 +101,38 @@ void drawEye(float eyeLandmarks[][], color col){
   beginShape();
   for (int i = 0; i < 8; i++) {
     pushMatrix();
-    vertex(eyeLandmarks[i][0], eyeLandmarks[i][1], eyeLandmarks[i][2] * -1);
+    vertex(eyeLandmarks[i][0], eyeLandmarks[i][1], -eyeLandmarks[i][2]);
     popMatrix();
    }
-   vertex(eyeLandmarks[0][0], eyeLandmarks[0][1], eyeLandmarks[0][2] * -1);   
+   vertex(eyeLandmarks[0][0], eyeLandmarks[0][1], -eyeLandmarks[0][2]);   
    endShape();
    
   // draw eyelids
   beginShape();
-  //print("pupil: ");
   for (int i = 8; i < 20; i++) {
     pushMatrix();
-    vertex(eyeLandmarks[i][0], eyeLandmarks[i][1], eyeLandmarks[i][2] * -1);
+    vertex(eyeLandmarks[i][0], eyeLandmarks[i][1], -eyeLandmarks[i][2]);
     popMatrix();
-    //print(eyeLandmarks[i][0] + ", "+ eyeLandmarks[i][1] + ", " + eyeLandmarks[i][2]);
    }
-   vertex(eyeLandmarks[8][0], eyeLandmarks[8][1], eyeLandmarks[8][2] * -1);
-   //println();
+   vertex(eyeLandmarks[8][0], eyeLandmarks[8][1], -eyeLandmarks[8][2]);
    endShape();
   
   // draw pupil
   beginShape();
   for (int i = 20; i < 28; i++) {
     pushMatrix();
-    vertex(eyeLandmarks[i][0], eyeLandmarks[i][1], eyeLandmarks[i][2] * -1);
+    vertex(eyeLandmarks[i][0], eyeLandmarks[i][1], -eyeLandmarks[i][2]);
     popMatrix();
    }
-   vertex(eyeLandmarks[20][0], eyeLandmarks[20][1], eyeLandmarks[20][2] * -1);
+   vertex(eyeLandmarks[20][0], eyeLandmarks[20][1], -eyeLandmarks[20][2]);
    endShape();   
 }
 
-/* incoming osc message are forwarded to the oscEvent method. */
+/*
+Incoming osc message are forwarded to the oscEvent method.
+Here we parse the OSC messeges
+*/
 void oscEvent(OscMessage theOscMessage) {
-
   
   /* print the address pattern and the typetag of the received OscMessage */
   //print("### received an osc message.");
@@ -186,9 +185,12 @@ void oscEvent(OscMessage theOscMessage) {
      lEyeGazeVec[1].y = theOscMessage.get(4).floatValue();
      lEyeGazeVec[1].z = theOscMessage.get(5).floatValue();
    } 
+   
+   //Store Head Pose
+   if(theOscMessage.checkAddrPattern("/openFace/headPose")==true){   
+     for (int i = 0; i < 6; i++) {
+       headPose[i] = theOscMessage.get(i).floatValue();
+     }
+   }
 
 }
-
-//void oscToArray(int cols, int rows, OscMessage oscMessageInput){
-//
-//}

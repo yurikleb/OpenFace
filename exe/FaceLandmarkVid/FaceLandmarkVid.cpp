@@ -123,7 +123,7 @@ void send_landmarks_via_osc(char* oscAddress, cv::Mat_<double>& theLandmarks) {
 
 
 //Send Gaze Vectors via OSC Messeges
-cv::Point3f GetPupilPositions(cv::Mat_<double> eyeLdmks3d) {
+cv::Point3f GetPupilCenter(cv::Mat_<double> eyeLdmks3d) {
 
 	eyeLdmks3d = eyeLdmks3d.t();
 
@@ -135,9 +135,8 @@ cv::Point3f GetPupilPositions(cv::Mat_<double> eyeLdmks3d) {
 
 void send_gaze_via_osc(char* oscAddress, cv::Mat eyeLdmks3d, cv::Point3f gazeVecAxis)
 {
-
 	//cv::Mat eyeLdmks3d_left = clnf_model.hierarchical_models[part_left].GetShape(fx, fy, cx, cy);
-	cv::Point3f pupil_pos = GetPupilPositions(eyeLdmks3d);
+	cv::Point3f pupil_pos = GetPupilCenter(eyeLdmks3d);
 
 	vector<cv::Point3d> points;
 	points.push_back(cv::Point3d(pupil_pos));
@@ -154,14 +153,12 @@ void send_gaze_via_osc(char* oscAddress, cv::Mat eyeLdmks3d, cv::Point3f gazeVec
 		<< osc::EndBundle;
 
 	transmitSocket.Send(p.Data(), p.Size());
-
 }
 
 
 // Visualising the results
 void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, const LandmarkDetector::CLNF& face_model, const LandmarkDetector::FaceModelParameters& det_parameters, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, int frame_count, double fx, double fy, double cx, double cy)
 {
-
 	// Drawing the facial landmarks on the face and the bounding box around it if tracking is successful and initialised
 	double detection_certainty = face_model.detection_certainty;
 	bool detection_success = face_model.detection_success;
@@ -203,37 +200,59 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 
 		/*
 			TO DO:
-				- Create hierarchical_models scan like in LandmarkDetectorUtils.cpp draw function or in the DrawGaze function in GazeEstimation.cpp
-	
+				- Add gestures: mouth width + height, eyebrows height, eye size, jaw pos
+				- Add Action Units
 		*/
 
 		//store 3D face landmarks
+		//fx,fy,cx,cy = Camera focal length and optical centre
 		cv::Mat_<double> faceLandmarks3d = face_model.GetShape(fx, fy, cx, cy);
 
 		//Store Eyes Landmarsks
-		cv::Mat_<double> rEyeLandmarks3d = face_model.hierarchical_models[1].GetShape(fx, fy, cx, cy);
-		cv::Mat_<double> lEyeLandmarks3d = face_model.hierarchical_models[2].GetShape(fx, fy, cx, cy);
+		//detect which model holds which eye
+		int part_left = -1;
+		int part_right = -1;
+		for (size_t i = 0; i < face_model.hierarchical_models.size(); ++i)
+		{
+			if (face_model.hierarchical_model_names[i].compare("left_eye_28") == 0)
+			{
+				part_left = i;
+			}
+			if (face_model.hierarchical_model_names[i].compare("right_eye_28") == 0)
+			{
+				part_right = i;
+			}
+		}
+		//store the eyes landmarks
+		cv::Mat_<double> rEyeLandmarks3d = face_model.hierarchical_models[part_left].GetShape(fx, fy, cx, cy);
+		cv::Mat_<double> lEyeLandmarks3d = face_model.hierarchical_models[part_right].GetShape(fx, fy, cx, cy);
 
 		//Send landmarks to OSC
 		send_landmarks_via_osc("/openFace/faceLandmarks", faceLandmarks3d);
 		send_landmarks_via_osc("/openFace/rightEye", rEyeLandmarks3d);
 		send_landmarks_via_osc("/openFace/leftEye", lEyeLandmarks3d);
-
+		
+		//Send gaze vectors
 		send_gaze_via_osc("/openFace/gazeVectorR", rEyeLandmarks3d, gazeDirection0);
 		send_gaze_via_osc("/openFace/gazeVectorL", lEyeLandmarks3d, gazeDirection1);
+		
+		//Send Head Pose Vector
+		//Position + Angle in radians (x, y, z, pitch_x, yaw_y, roll_z)
+		p.Clear();
 
+		p << osc::BeginBundleImmediate
+			<< osc::BeginMessage("/openFace/headPose");
 
-		//Head pose vector (x,y,x,eulerAngle)
-		//for (int i = 0; i < 6; i++) {
-		//	p << (float)pose_estimate_to_draw[i];
-		//}
+		for (int i = 0; i < pose_estimate_to_draw.rows; i++) {
+			p << (float)pose_estimate_to_draw[i];
+		}
 
+		p << osc::EndMessage
+			<< osc::EndBundle;
 
-		//Camera Data
-		//p << (float)fx << (float)fy << (float)cx << (float)cy;
+		transmitSocket.Send(p.Data(), p.Size());
 
-		//Face landmarks
-
+		// END OF OSC Data Send
 
 	}
 
@@ -464,7 +483,7 @@ int main (int argc, char **argv)
 			
 			visualise_tracking(captured_image, depth_image, clnf_model, det_parameters, gazeDirection0, gazeDirection1, frame_count, fx, fy, cx, cy);
 			
-			//######### Add OSC class call here. #########
+			//######### Add OSC calls here. #########
 
 
 			// output the tracked video

@@ -563,7 +563,9 @@ int main (int argc, char **argv)
 			// But only if needed in output
 			if(!output_similarity_align.empty() || hog_output_file.is_open() || output_AUs)
 			{
+				//change to true to use camera
 				face_analyser.AddNextFrame(captured_image, face_model, time_stamp, false, !det_parameters.quiet_mode);
+				//face_analyser.GetCurrentAUsReg
 				face_analyser.GetLatestAlignedFace(sim_warped_img);
 
 				if(!det_parameters.quiet_mode)
