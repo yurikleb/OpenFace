@@ -15,7 +15,7 @@ The OSC client is incorporated into the "FaceLandmarkVid" Project
 The face landmark data, gaze data and pose data is sent to the localhost "127.0.0.1"
 over port 6448
 
-#### OSC Channels:
+#### The OSC Channels:
 
 - "/openFace/faceLandmarks"
 - "/openFace/rightEye"
