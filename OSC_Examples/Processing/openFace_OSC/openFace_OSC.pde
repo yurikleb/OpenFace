@@ -176,7 +176,7 @@ void oscEvent(OscMessage theOscMessage) {
      rEyeGazeVec[1].z = theOscMessage.get(5).floatValue();
    }
    
-   ////Store incoming right eye gaze vector
+   //Store incoming right eye gaze vector
    if(theOscMessage.checkAddrPattern("/openFace/gazeVectorL")==true){
      lEyeGazeVec[0].x = theOscMessage.get(0).floatValue();
      lEyeGazeVec[0].y = theOscMessage.get(1).floatValue();
