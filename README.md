@@ -14,7 +14,13 @@ This Versoin is adding an OSC client so the project is easier to interface with 
 The OSC client is incorporated into the "FaceLandmarkVid" Project
 The face landmark data, gaze data and pose data is sent to the localhost "127.0.0.1"
 over port 6448
-channel "/openFace/allData"
+###OSC Channels:
+- "/openFace/faceLandmarks"
+- "/openFace/rightEye"
+- "/openFace/leftEye"
+- "/openFace/gazeVectorR"
+- "/openFace/gazeVectorL"
+- "/openFace/headPose"
 
 If visual studio throws an import error, make sure the project settings match the screenshots in the "./osc_settings" folder
 
