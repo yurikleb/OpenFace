@@ -1094,10 +1094,10 @@ void Draw(cv::Mat img, const cv::Mat_<double>& shape2D, const cv::Mat_<int>& vis
 			cv::Point nextFeaturePoint(cvRound(shape2D.at<double>(next_point) * (double)draw_multiplier), cvRound(shape2D.at<double>(next_point + n) * (double)draw_multiplier));
 			if( i < 8 || i > 19)
 				//Draw Eyelids
-				cv::line(img, featurePoint, nextFeaturePoint, cv::Scalar(0, 255, 0), thickness_2, CV_AA, draw_shiftbits);
+				cv::line(img, featurePoint, nextFeaturePoint, cv::Scalar(255, 255, 0), thickness_2, CV_AA, draw_shiftbits);
 			else
 				//Draw eye outline
-				cv::line(img, featurePoint, nextFeaturePoint, cv::Scalar(100, 255, 0), thickness_2, CV_AA, draw_shiftbits);
+				cv::line(img, featurePoint, nextFeaturePoint, cv::Scalar(255, 255, 0), thickness_2, CV_AA, draw_shiftbits);
 
 
 		}

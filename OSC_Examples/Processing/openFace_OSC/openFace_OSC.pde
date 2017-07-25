@@ -187,6 +187,7 @@ void oscEvent(OscMessage theOscMessage) {
    
    //Store Head Pose
    //Headpose consissts of 6 values: x,y,z,rotation_x,rotation_y,rotation_z
+   //Rotation is in Radians
    if(theOscMessage.checkAddrPattern("/openFace/headPose")==true){   
      for (int i = 0; i < 6; i++) {
        headPose[i] = theOscMessage.get(i).floatValue();

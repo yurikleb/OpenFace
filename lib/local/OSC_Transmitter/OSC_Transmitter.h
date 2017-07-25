@@ -9,10 +9,7 @@
 #include "GazeEstimation.h"
 
 // OpenCV includes
-#include <opencv2/videoio/videoio.hpp>  // Video write
-#include <opencv2/videoio/videoio_c.h>  // Video write
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/core/core.hpp>
 
 namespace OSC_Funcs
 {
@@ -24,7 +21,8 @@ namespace OSC_Funcs
 		OSC_Transmitter();
 		
 		// Sends OSC Messege
-		static void SendMessege(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy);
+		static void SendFaceData(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy, int modelId);
+
 
 	};
 }

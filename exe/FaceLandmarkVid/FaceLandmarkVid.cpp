@@ -351,7 +351,7 @@ int main (int argc, char **argv)
 			visualise_tracking(captured_image, depth_image, clnf_model, det_parameters, gazeDirection0, gazeDirection1, frame_count, fx, fy, cx, cy);
 			
 			//Send Tracking data over OSC
-			OSC_Funcs::OSC_Transmitter::SendMessege(clnf_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
+			OSC_Funcs::OSC_Transmitter::SendFaceData(clnf_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy, -1);
 
 
 			// output the tracked video

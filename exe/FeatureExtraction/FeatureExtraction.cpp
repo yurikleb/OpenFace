@@ -370,6 +370,7 @@ int main (int argc, char **argv)
 	// Make sure sim_scale is proportional to sim_size if not set
 	if (sim_scale == -1) sim_scale = sim_size * (0.7 / 112.0);
 
+	//use this to send AU 
 	FaceAnalysis::FaceAnalyser face_analyser(vector<cv::Vec3d>(), sim_scale, sim_size, sim_size, au_loc, tri_loc);
 		
 	while(!done) // this is not a for loop as we might also be reading from a webcam

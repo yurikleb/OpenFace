@@ -5,10 +5,12 @@
 
 /*
 TO DOs:
+
+- Action Units Send
+- Separate Action Units from pose
 - Add gestures: mouth width + height, eyebrows height, eye size, jaw pos
-- Add Action Units
-- Double check correct OSC includes in header file
 - Add settings flags or UI to be able to chnage remote IP/PORT
+
 */
 
 #include "OSC_Transmitter.h"
@@ -101,8 +103,16 @@ namespace OSC_Funcs
 		oscTransmitSocket.Send(packet.Data(), packet.Size());
 	}
 
-	void OSC_Transmitter::SendMessege(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy) {
+	//Send Face Data Over OSC used in FaceLandmarkVid.cpp and in FaceLandmarkVidMulti.cpp
+	void OSC_Transmitter::SendFaceData(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy, int modelId) {
 
+		string oscAddressPrefix = "/openFace/";
+		
+		if (modelId > -1) {
+			oscAddressPrefix += "faceId_" + to_string(modelId) + "/";
+			//cout << oscAddressPrefix << "\n";
+		}
+	
 		//store 3D face landmarks
 		//fx,fy,cx,cy = Camera focal length and optical centre
 		cv::Mat_<double> userFaceLandmarks3d = face_model.GetShape(fx, fy, cx, cy);
@@ -133,12 +143,14 @@ namespace OSC_Funcs
 		send_landmarks_via_osc("/openFace/leftEye", lEyeLandmarks3d);
 
 		//Send gaze vectors
-		send_gaze_via_osc("/openFace/gazeVectorR", rEyeLandmarks3d, gazeDirection0);
-		send_gaze_via_osc("/openFace/gazeVectorL", lEyeLandmarks3d, gazeDirection1);
+		if (gazeDirection0 != cv::Point3f(0, 0, 0) && gazeDirection1 != cv::Point3f(0, 0, 0)) {
+			send_gaze_via_osc("/openFace/gazeVectorR", rEyeLandmarks3d, gazeDirection0);
+			send_gaze_via_osc("/openFace/gazeVectorL", lEyeLandmarks3d, gazeDirection1);
+		}
 
 		//Send Head Pose Vector: Position + Angle in radians (x, y, z, pitch_x, yaw_y, roll_z)
 		cv::Vec6d pose_estimate_to_draw = LandmarkDetector::GetCorrectedPoseWorld(face_model, fx, fy, cx, cy);
-		
+
 		packet.Clear();
 
 		packet << osc::BeginBundleImmediate
