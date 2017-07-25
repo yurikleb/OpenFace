@@ -4,7 +4,7 @@
 //#####################################################
 
 /*
-TO DO:
+TO DOs:
 - Add gestures: mouth width + height, eyebrows height, eye size, jaw pos
 - Add Action Units
 - Double check correct OSC includes in header file

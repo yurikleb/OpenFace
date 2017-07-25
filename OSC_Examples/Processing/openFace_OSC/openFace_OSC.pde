@@ -1,3 +1,6 @@
+//This Is a Sample sketch demonstraitng reading and visualizing  OSC data coming form OpenFace.
+// Make sure you have oscP5 Library installed.
+
 import oscP5.*;
 import netP5.*;
   
@@ -21,6 +24,7 @@ float[] headPose = new float[6];
 float midX,midY,midZ;
 
 void setup() {
+  
   size(800,800,P3D);
   frameRate(30);
   midX = width/2;
@@ -32,21 +36,13 @@ void setup() {
   lEyeGazeVec[0] = new PVector(0,0,0);
   lEyeGazeVec[1] = new PVector(0,0,0);
   
-  /* start oscP5, listening for incoming messages at port 6448 */
+  // Start oscP5
+  // Listening for incoming messages at port 6448
   oscP5 = new OscP5(this,6448);
-  
-  /* myRemoteLocation is a NetAddress. a NetAddress takes 2 parameters,
-   * an ip address and a port number. myRemoteLocation is used as parameter in
-   * oscP5.send() when sending osc packets to another computer, device, 
-   * application. usage see below. for testing purposes the listening port
-   * and the port of the remote location address are the same, hence you will
-   * send messages back to this sketch.
-   */
-  //myRemoteLocation = new NetAddress("127.0.0.1",6448);
   
   background(0);
   textSize(7);
-  lights();
+
 }
 
 
@@ -57,6 +53,7 @@ void draw() {
   noStroke();
   
   translate(midX, midY, midZ);  
+  
   //Draw Face landmarks
   for (int i = 0; i < faceArrayCols; i++) {
     pushMatrix();
@@ -69,7 +66,7 @@ void draw() {
   drawEye(rEyeLandmarks, color(255,0,0));
   drawEye(lEyeLandmarks, color(0,255,0));
   
-  //Draw Gaze
+  //Draw Gaze Vectors
   noFill();
   stroke(255);
   pushMatrix();
@@ -88,7 +85,6 @@ void draw() {
   box(150);
   popMatrix();
   
-
 }
 
 //Draw Eye landmarks: 8-19 Eyelids, 0-7 Iris, 20-27 Pupil
@@ -97,7 +93,7 @@ void drawEye(float eyeLandmarks[][], color col){
   noFill();  
   stroke(col);
   
-  // draw iris
+  // Draw iris (Landmarks 0-7 in the eye landmarks matrix)
   beginShape();
   for (int i = 0; i < 8; i++) {
     pushMatrix();
@@ -107,7 +103,7 @@ void drawEye(float eyeLandmarks[][], color col){
    vertex(eyeLandmarks[0][0], eyeLandmarks[0][1], -eyeLandmarks[0][2]);   
    endShape();
    
-  // draw eyelids
+  // Draw eyelids (Landmarks 8-19 in the eye landmarks matrix)
   beginShape();
   for (int i = 8; i < 20; i++) {
     pushMatrix();
@@ -117,7 +113,7 @@ void drawEye(float eyeLandmarks[][], color col){
    vertex(eyeLandmarks[8][0], eyeLandmarks[8][1], -eyeLandmarks[8][2]);
    endShape();
   
-  // draw pupil
+  //Draw pupil (Landmarks 20-27 in the eye landmarks matrix)
   beginShape();
   for (int i = 20; i < 28; i++) {
     pushMatrix();
@@ -128,16 +124,19 @@ void drawEye(float eyeLandmarks[][], color col){
    endShape();   
 }
 
-/*
-Incoming osc message are forwarded to the oscEvent method.
-Here we parse the OSC messeges
-*/
+
+//Incoming osc message are forwarded to the oscEvent method.
+//Here we parse the OSC messeges
+
 void oscEvent(OscMessage theOscMessage) {
   
-  /* print the address pattern and the typetag of the received OscMessage */
-  //print("### received an osc message.");
-  //println(" addr: "+theOscMessage.addrPattern() + " ");
+  //print the address pattern and the typetag of the received OscMessage */
+  //Uncomment this to see all incoming OSC messages/data.
+  //println("### received an osc message");
+  //print(" addr: "+theOscMessage.addrPattern() + " ");
   //theOscMessage.print();
+  //println();
+  //println("### end of osc message ###");
 
   //Store incoming Face landmarks
   if(theOscMessage.checkAddrPattern("/openFace/faceLandmarks")==true){
@@ -187,6 +186,7 @@ void oscEvent(OscMessage theOscMessage) {
    } 
    
    //Store Head Pose
+   //Headpose consissts of 6 values: x,y,z,rotation_x,rotation_y,rotation_z
    if(theOscMessage.checkAddrPattern("/openFace/headPose")==true){   
      for (int i = 0; i < 6; i++) {
        headPose[i] = theOscMessage.get(i).floatValue();

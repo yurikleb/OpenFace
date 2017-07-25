@@ -51,20 +51,6 @@
 #include <filesystem.hpp>
 #include <filesystem/fstream.hpp>
 
-//OSC Includes
-//#include "osc/OscOutboundPacketStream.h"
-//#include "ip/UdpSocket.h"
-
-//OSC Settings
-//#define ADDRESS "127.0.0.1"
-//#define PORT 6448
-//#define OUTPUT_BUFFER_SIZE 2500
-
-//UdpTransmitSocket transmitSocket(IpEndpointName(ADDRESS, PORT));
-
-//char buffer[OUTPUT_BUFFER_SIZE];
-//osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
-
 #define INFO_STREAM( stream ) \
 std::cout << stream << std::endl
 
@@ -100,63 +86,6 @@ vector<string> get_arguments(int argc, char **argv)
 // Some globals for tracking timing information for visualisation
 double fps_tracker = -1.0;
 int64 t0 = 0;
-
-//Send 3D Landmarks via OSC Messeges
-//void send_landmarks_via_osc(char* oscAddress, cv::Mat_<double>& theLandmarks) {
-//
-//	p.Clear();
-//
-//	p << osc::BeginBundleImmediate
-//		<< osc::BeginMessage(oscAddress);
-//
-//	for (int i = 0; i < theLandmarks.cols; i++) {
-//		for (int j = 0; j < theLandmarks.rows; j++) {
-//			p << (float)theLandmarks[j][i];
-//		}
-//	}
-//
-//	p << osc::EndMessage
-//		<< osc::EndBundle;
-//
-//	transmitSocket.Send(p.Data(), p.Size());
-//
-//}
-
-
-////Get Pupil Center
-//cv::Point3f GetPupilCenter(cv::Mat_<double> eyeLdmks3d) {
-//
-//	eyeLdmks3d = eyeLdmks3d.t();
-//
-//	cv::Mat_<double> irisLdmks3d = eyeLdmks3d.rowRange(0, 8);
-//
-//	cv::Point3f pt(mean(irisLdmks3d.col(0))[0], mean(irisLdmks3d.col(1))[0], mean(irisLdmks3d.col(2))[0]);
-//	return pt;
-//}
-//
-////Send Gaze Vectors
-//void send_gaze_via_osc(char* oscAddress, cv::Mat eyeLdmks3d, cv::Point3f gazeVecAxis)
-//{
-//	//cv::Mat eyeLdmks3d_left = clnf_model.hierarchical_models[part_left].GetShape(fx, fy, cx, cy);
-//	cv::Point3f pupil_pos = GetPupilCenter(eyeLdmks3d);
-//
-//	vector<cv::Point3d> points;
-//	points.push_back(cv::Point3d(pupil_pos));
-//	points.push_back(cv::Point3d(pupil_pos + gazeVecAxis*50.0));
-//
-//	p.Clear();
-//
-//	p << osc::BeginBundleImmediate
-//		<< osc::BeginMessage(oscAddress);
-//
-//	p << (float)points[0].x << (float)points[0].y << (float)points[0].z << (float)points[1].x << (float)points[1].y << (float)points[1].z;
-//
-//	p << osc::EndMessage
-//		<< osc::EndBundle;
-//
-//	transmitSocket.Send(p.Data(), p.Size());
-//}
-
 
 // Visualising the results
 void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, const LandmarkDetector::CLNF& face_model, const LandmarkDetector::FaceModelParameters& det_parameters, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, int frame_count, double fx, double fy, double cx, double cy)
@@ -196,66 +125,6 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 			FaceAnalysis::DrawGaze(captured_image, face_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
 		}
 
-		
-		//Send data via OSC ( 3 gaze coords + 68 3D landmarks ) 
-		//#####################################################
-
-		/*
-			TO DO:
-				- Add gestures: mouth width + height, eyebrows height, eye size, jaw pos
-				- Add Action Units
-		*/
-
-		//store 3D face landmarks
-		//fx,fy,cx,cy = Camera focal length and optical centre
-		//cv::Mat_<double> faceLandmarks3d = face_model.GetShape(fx, fy, cx, cy);
-
-		////Store Eyes Landmarsks
-		////detect which model holds which eye
-		//int part_left = -1;
-		//int part_right = -1;
-		//for (size_t i = 0; i < face_model.hierarchical_models.size(); ++i)
-		//{
-		//	if (face_model.hierarchical_model_names[i].compare("left_eye_28") == 0)
-		//	{
-		//		part_left = i;
-		//	}
-		//	if (face_model.hierarchical_model_names[i].compare("right_eye_28") == 0)
-		//	{
-		//		part_right = i;
-		//	}
-		//}
-		////store the eyes landmarks
-		//cv::Mat_<double> rEyeLandmarks3d = face_model.hierarchical_models[part_left].GetShape(fx, fy, cx, cy);
-		//cv::Mat_<double> lEyeLandmarks3d = face_model.hierarchical_models[part_right].GetShape(fx, fy, cx, cy);
-
-		////Send landmarks to OSC
-		//send_landmarks_via_osc("/openFace/faceLandmarks", faceLandmarks3d);
-		//send_landmarks_via_osc("/openFace/rightEye", rEyeLandmarks3d);
-		//send_landmarks_via_osc("/openFace/leftEye", lEyeLandmarks3d);
-		//
-		////Send gaze vectors
-		//send_gaze_via_osc("/openFace/gazeVectorR", rEyeLandmarks3d, gazeDirection0);
-		//send_gaze_via_osc("/openFace/gazeVectorL", lEyeLandmarks3d, gazeDirection1);
-		//
-		////Send Head Pose Vector
-		////Position + Angle in radians (x, y, z, pitch_x, yaw_y, roll_z)
-		//p.Clear();
-
-		//p << osc::BeginBundleImmediate
-		//	<< osc::BeginMessage("/openFace/headPose");
-
-		//for (int i = 0; i < pose_estimate_to_draw.rows; i++) {
-		//	p << (float)pose_estimate_to_draw[i];
-		//}
-
-		//p << osc::EndMessage
-		//	<< osc::EndBundle;
-
-		//transmitSocket.Send(p.Data(), p.Size());
-
-		// END OF OSC Data Send
-
 	}
 
 	// Work out the framerate
@@ -289,10 +158,6 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 
 int main (int argc, char **argv)
 {
-	//OSC INIT
-	//(void)argc; // suppress unused parameter warnings
-	//(void)argv; // suppress unused parameter warnings
-	//INFO_STREAM("OSC Client Online!");
 
 	vector<string> arguments = get_arguments(argc, argv);
 
@@ -482,10 +347,10 @@ int main (int argc, char **argv)
 				FaceAnalysis::EstimateGaze(clnf_model, gazeDirection1, fx, fy, cx, cy, false);
 			}
 
-			//Visualize Tracking Date
+			//Visualize Tracking Data
 			visualise_tracking(captured_image, depth_image, clnf_model, det_parameters, gazeDirection0, gazeDirection1, frame_count, fx, fy, cx, cy);
 			
-			//Send Tracking data over OSC.
+			//Send Tracking data over OSC
 			OSC_Funcs::OSC_Transmitter::SendMessege(clnf_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
 
 
