@@ -7,11 +7,13 @@ This is a forked version of "OpenFace: an open source facial behavior analysis t
 
 More details about the project - http://www.cl.cam.ac.uk/research/rainbow/projects/openface/
 
-This Versoin is adding an OSC client so the project is easier to interface with OSC based projects.
+**This Versoin is adding an OSC client so the project is easier to interface with OSC based projects.**
+
+This Project allows easily create face controlled interfaces and interactive expiriences. The data coming out from OpenFace is sent over the OSC protocol, making it easy to connect with many popular prototyping and interaction design platform such as Processing, Touch Dsigner, Max/MSP, vvvv, Arduino.
 
 ## OSC Functionality
 
-The OSC client is incorporated into the "FaceLandmarkVid" Project
+The OSC client is incorporated into the "FaceLandmarkVid.cpp" Project
 The face landmark data, gaze data and pose data is sent to the localhost "127.0.0.1"
 over port 6448
 
@@ -27,6 +29,8 @@ over port 6448
 If visual studio throws an import error, make sure the project settings match the screenshots in the "./osc_settings" folder
 
 You can use OSCdata monitor for an easy data peview (make sure to add port 6448): https://www.kasperkamperman.com/blog/osc-datamonitor/
+
+You can find examples of using the data on different platforms in: "./osc_examples"
 
 ## Functionality
 
