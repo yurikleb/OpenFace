@@ -34,6 +34,8 @@ You can use OSCdata monitor for an easy data peview (make sure to add port 6448)
 
 You can find examples of using the data on different platforms in: "./osc_examples"
 
+![Sample Gaze Tracking](https://media.giphy.com/media/IOZ6sD98zbzEI/giphy.gif)
+
 ## Functionality
 
 The system is capable of performing a number of facial analysis tasks:
