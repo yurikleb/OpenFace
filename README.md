@@ -9,7 +9,9 @@ More details about the project - http://www.cl.cam.ac.uk/research/rainbow/projec
 
 **This Versoin is adding an OSC client so the project is easier to interface with OSC based projects.**
 
-This Project allows easily create face controlled interfaces and interactive expiriences. The data coming out from OpenFace is sent over the OSC protocol, making it easy to connect with many popular prototyping and interaction design platform such as Processing, Touch Dsigner, Max/MSP, vvvv, Arduino.
+This Project allows easily create face controlled interfaces and interactive experiences. The data coming out from OpenFace is sent over the OSC protocol, making it easy to connect with many popular prototyping and interaction design platform such as Processing, TouchDsigner, Max/MSP, vvvv, Arduino, ect.
+
+Using OSC also allows the data to be sent to a remote server, thus allowing using OpenFace to control remote applications and hardware.
 
 ## OSC Functionality
 

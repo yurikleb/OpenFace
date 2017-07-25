@@ -8,6 +8,7 @@ TO DOs:
 - Add gestures: mouth width + height, eyebrows height, eye size, jaw pos
 - Add Action Units
 - Double check correct OSC includes in header file
+- Add settings flags or UI to be able to chnage remote IP/PORT
 */
 
 #include "OSC_Transmitter.h"
