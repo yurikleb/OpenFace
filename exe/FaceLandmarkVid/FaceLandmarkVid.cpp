@@ -37,6 +37,9 @@
 #include "LandmarkCoreIncludes.h"
 #include "GazeEstimation.h"
 #include "OSC_Transmitter.h"
+#include "FaceAnalyser.h"
+#include "Face_utils.h"
+
 
 #include <fstream>
 #include <sstream>
@@ -50,6 +53,10 @@
 // Boost includes
 #include <filesystem.hpp>
 #include <filesystem/fstream.hpp>
+
+#ifndef CONFIG_DIR
+#define CONFIG_DIR "~"
+#endif
 
 #define INFO_STREAM( stream ) \
 std::cout << stream << std::endl
@@ -156,6 +163,9 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 	}
 }
 
+
+void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser);
+
 int main (int argc, char **argv)
 {
 
@@ -201,6 +211,79 @@ int main (int argc, char **argv)
 	int f_n = -1;
 	
 	det_parameters.track_gaze = true;
+
+
+	//Action Units Extraction Setup
+	
+	// Search paths
+	boost::filesystem::path config_path = boost::filesystem::path(CONFIG_DIR);
+	boost::filesystem::path parent_path = boost::filesystem::path(arguments[0]).parent_path();
+	string au_loc;
+	
+	double sim_scale = -1;
+	int sim_size = 112;
+	bool dynamic = true; // Indicates if a dynamic AU model should be used (dynamic is useful if the video is long enough to include neutral expressions)
+
+
+	//Load triangulation files, Used for image masking
+	string tri_loc;
+	boost::filesystem::path tri_loc_path = boost::filesystem::path("model/tris_68_full.txt");
+	if (boost::filesystem::exists(tri_loc_path))
+	{
+		tri_loc = tri_loc_path.string();
+	}
+	else if (boost::filesystem::exists(parent_path / tri_loc_path))
+	{
+		tri_loc = (parent_path / tri_loc_path).string();
+	}
+	else if (boost::filesystem::exists(config_path / tri_loc_path))
+	{
+		tri_loc = (config_path / tri_loc_path).string();
+	}
+	else
+	{
+		cout << "Can't find triangulation files, exiting" << endl;
+		return 1;
+	}
+
+	//Load Prediction files
+	string au_loc_local;
+	if (dynamic)
+	{
+		au_loc_local = "AU_predictors/AU_all_best.txt";
+	}
+	else
+	{
+		au_loc_local = "AU_predictors/AU_all_static.txt";
+	}
+
+	boost::filesystem::path au_loc_path = boost::filesystem::path(au_loc_local);
+	if (boost::filesystem::exists(au_loc_path))
+	{
+		au_loc = au_loc_path.string();
+	}
+	else if (boost::filesystem::exists(parent_path/au_loc_path))
+	{
+		au_loc = (parent_path/au_loc_path).string();
+	}
+	else if (boost::filesystem::exists(config_path/au_loc_path))
+	{
+		au_loc = (config_path/au_loc_path).string();
+	}
+	else
+	{
+		cout << "Can't find AU prediction files, exiting" << endl;
+		return 1;
+	}
+
+	// Creating a  face analyser that will be used for AU extraction
+	// Make sure sim_scale is proportional to sim_size if not set
+	if (sim_scale == -1) sim_scale = sim_size * (0.7 / 112.0);
+
+	//use this to send AU 
+	FaceAnalysis::FaceAnalyser face_analyser(vector<cv::Vec3d>(), sim_scale, sim_size, sim_size, au_loc, tri_loc);
+	///End of Action Units Extraction Setup
+
 
 	while(!done) // this is not a for loop as we might also be reading from a webcam
 	{
@@ -353,6 +436,13 @@ int main (int argc, char **argv)
 			//Send Tracking data over OSC
 			OSC_Funcs::OSC_Transmitter::SendFaceData(clnf_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy, -1);
 
+			
+			//GET AUs
+			//change to true to use camera
+			double time_stamp = 0;
+			face_analyser.AddNextFrame(captured_image, clnf_model, time_stamp, true, !det_parameters.quiet_mode);
+			cout << "\n ACTION UNITS: ";
+			output_AUs(face_analyser);
 
 			// output the tracked video
 			if (!output_video_files.empty())
@@ -395,5 +485,63 @@ int main (int argc, char **argv)
 	}
 
 	return 0;
+}
+
+
+
+
+void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser)
+{
+	auto aus_reg = face_analyser.GetCurrentAUsReg();
+
+	vector<string> au_reg_names = face_analyser.GetAURegNames();
+	std::sort(au_reg_names.begin(), au_reg_names.end());
+
+	// write out ar the correct index
+	for (string au_name : au_reg_names)
+	{
+		for (auto au_reg : aus_reg)
+		{
+			if (au_name.compare(au_reg.first) == 0)
+			{
+				cout << ", " << au_reg.second;
+				break;
+			}
+		}
+	}
+
+	if (aus_reg.size() == 0)
+	{
+		for (size_t p = 0; p < face_analyser.GetAURegNames().size(); ++p)
+		{
+			cout << ", 0";
+		}
+	}
+
+	auto aus_class = face_analyser.GetCurrentAUsClass();
+
+	vector<string> au_class_names = face_analyser.GetAUClassNames();
+	std::sort(au_class_names.begin(), au_class_names.end());
+
+	// write out ar the correct index
+	for (string au_name : au_class_names)
+	{
+		for (auto au_class : aus_class)
+		{
+			if (au_name.compare(au_class.first) == 0)
+			{
+				cout << ", " << au_class.second;
+				break;
+			}
+		}
+	}
+
+	if (aus_class.size() == 0)
+	{
+		for (size_t p = 0; p < face_analyser.GetAUClassNames().size(); ++p)
+		{
+			cout << ", 0";
+		}
+	}
 }
 
