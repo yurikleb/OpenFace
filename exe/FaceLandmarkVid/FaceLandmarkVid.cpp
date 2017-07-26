@@ -88,6 +88,8 @@ printErrorAndAbort( std::string( "Fatal error: " ) + stream )
 using namespace std;
 using namespace boost::filesystem;
 
+string emotion="-";
+
 vector<string> get_arguments(int argc, char **argv)
 {
 
@@ -103,6 +105,35 @@ vector<string> get_arguments(int argc, char **argv)
 // Some globals for tracking timing information for visualisation
 double fps_tracker = -1.0;
 int64 t0 = 0;
+
+void sendOSCInt(char* address,int value){
+	//Send data via OSC ( 3 gaze coords + 136 landmarks = 142 data points) 
+		p.Clear();
+		
+		//Gaze vectors
+		p << osc::BeginBundleImmediate
+			<< osc::BeginMessage(address);
+		
+		p << value;
+		p << osc::EndMessage
+			<< osc::EndBundle;
+
+		transmitSocket.Send(p.Data(), p.Size());
+}
+void sendOSCBool(char* address,bool value){
+	//Send data via OSC ( 3 gaze coords + 136 landmarks = 142 data points) 
+		p.Clear();
+		
+		//Gaze vectors
+		p << osc::BeginBundleImmediate
+			<< osc::BeginMessage(address);
+		
+		p << value;
+		p << osc::EndMessage
+			<< osc::EndBundle;
+
+		transmitSocket.Send(p.Data(), p.Size());
+}
 
 // Visualising the results
 void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, const LandmarkDetector::CLNF& face_model, const LandmarkDetector::FaceModelParameters& det_parameters, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, int frame_count, double fx, double fy, double cx, double cy)
@@ -185,7 +216,8 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 	std::sprintf(fpsC, "%d", (int)fps_tracker);
 	string fpsSt("FPS:");
 	fpsSt += fpsC;
-	cv::putText(captured_image, fpsSt, cv::Point(10, 20), CV_FONT_HERSHEY_SIMPLEX, 0.5, CV_RGB(255, 0, 0));
+	fpsSt += "   estimating: " + emotion; 
+	cv::putText(captured_image, fpsSt, cv::Point(10, 27), CV_FONT_HERSHEY_SIMPLEX, 0.95, CV_RGB(255, 0, 0));
 
 	if (!det_parameters.quiet_mode)
 	{
@@ -338,7 +370,12 @@ void outputAllFeatures(bool output_2D_landmarks, bool output_3D_landmarks,
 		vector<string> au_reg_names = face_analyser.GetAURegNames();
 		std::sort(au_reg_names.begin(), au_reg_names.end());
 
+		//frown: AU15,AU17
+		//smile: AU12
+		/*
+		float AU12,AU14,AU15,AU17;
 		// write out ar the correct index
+		// floating point values here
 		for (string au_name : au_reg_names)
 		{
 			for (auto au_reg : aus_reg)
@@ -346,12 +383,36 @@ void outputAllFeatures(bool output_2D_landmarks, bool output_3D_landmarks,
 				if (au_name.compare(au_reg.first) == 0)
 				{
 					// *output_file << ", " << au_reg.second;
-					cout << " au_name : " << au_name << " = "  << au_reg.second << endl;
+					// cout << " au_name : " << au_name << " = "  << au_reg.second << endl;
+					if(au_name == "AU12"){
+						AU12 = au_reg.second;
+					}
+					if(au_name == "AU14"){
+						AU14 = au_reg.second;
+					}
+					if(au_name == "AU15"){
+						AU15 = au_reg.second;
+					}
+					if(au_name == "AU17"){
+						AU17 = au_reg.second;
+					}
 					break;
 				}
 			}
 		}
 
+		cout << "AU12=" << AU12 << "\tAU14=" << AU14 << "\tAU15=" << AU15 << "\tAU17=" << AU17 << endl;
+		// smile = AU12 > 1.7
+		// frown = AU15 > 1.7
+		if(AU12 > 1.7){
+			emotion = ":)";
+		}else
+		if(AU15 > 1.7){
+			emotion = ":(";
+		}else{
+			emotion = ":|";
+		}
+		//*/
 		if (aus_reg.size() == 0)
 		{
 			for (size_t p = 0; p < face_analyser.GetAURegNames().size(); ++p)
@@ -366,6 +427,11 @@ void outputAllFeatures(bool output_2D_landmarks, bool output_3D_landmarks,
 		std::sort(au_class_names.begin(), au_class_names.end());
 
 		// write out ar the correct index
+		// zeros and ones over here
+		// smile: AU12, AU14 ~AU06
+		// frown: AU15, AU17
+		//*
+		bool AU12,AU14,AU15,AU17;
 		for (string au_name : au_class_names)
 		{
 			for (auto au_class : aus_class)
@@ -374,10 +440,36 @@ void outputAllFeatures(bool output_2D_landmarks, bool output_3D_landmarks,
 				{
 					// *output_file << ", " << au_class.second;
 					cout << " au_name : " << au_name << " = " << au_class.second << endl; 
+					if(au_name == "AU12"){
+						AU12 = au_class.second;
+					}
+					if(au_name == "AU14"){
+						AU14 = au_class.second;
+					}
+					if(au_name == "AU15"){
+						AU15 = au_class.second;
+					}
+					if(au_name == "AU17"){
+						AU17 = au_class.second;
+					}
 					break;
 				}
 			}
 		}
+
+		if(AU12 && AU14){
+			emotion = ":)";
+		}else
+		if(AU15 && AU17){
+			emotion = ":(";
+		}else{
+			emotion = ":|";
+		}
+		sendOSCBool("/AU12",AU12);
+		sendOSCBool("/AU14",AU14);
+		sendOSCBool("/AU15",AU15);
+		sendOSCBool("/AU17",AU17);
+		//*/
 
 		if (aus_class.size() == 0)
 		{
@@ -698,6 +790,8 @@ int main (int argc, char **argv)
 		{
 			INFO_STREAM( "Attempting to capture from device: " << device );
 			video_capture = cv::VideoCapture( device );
+			video_capture.set(CV_CAP_PROP_FRAME_WIDTH ,640);
+			video_capture.set(CV_CAP_PROP_FRAME_HEIGHT,480);
 
 			// Read a first frame often empty in camera
 			cv::Mat captured_image;
