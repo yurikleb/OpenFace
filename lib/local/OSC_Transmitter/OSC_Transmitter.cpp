@@ -103,8 +103,10 @@ namespace OSC_Funcs
 		oscTransmitSocket.Send(packet.Data(), packet.Size());
 	}
 
+
 	//Send Face Data Over OSC used in FaceLandmarkVid.cpp and in FaceLandmarkVidMulti.cpp
-	void OSC_Transmitter::SendFaceData(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy, int modelId) {
+	void OSC_Transmitter::SendFaceData(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy, int modelId)
+	{
 
 		string oscAddressPrefix = "/openFace/";
 		
@@ -165,6 +167,91 @@ namespace OSC_Funcs
 
 		oscTransmitSocket.Send(packet.Data(), packet.Size());
 
+	}
+
+	void OSC_Transmitter::SendAUs(const FaceAnalysis::FaceAnalyser& face_analyser_data)
+	{
+
+		//Send Names + intensity Value (1, 2, 4, 5, 6, 7, 9, 10, 12, 14, 15, 17, 20, 23, 25, 26, 45)
+		auto aus_reg = face_analyser_data.GetCurrentAUsReg();
+		vector<string> au_reg_names = face_analyser_data.GetAURegNames();
+		std::sort(au_reg_names.begin(), au_reg_names.end());
+
+
+		packet.Clear();
+		packet << osc::BeginBundleImmediate
+			<< osc::BeginMessage("/openFace/ActionUnits");
+
+		//Print AU Names
+		//cout << "\n";
+		//std::sort(au_reg_names.begin(), au_reg_names.end());
+		//for (string reg_name : au_reg_names)
+		//{
+		//	cout << ", " << reg_name << "_r";
+		//}
+
+		//Send AU Intenity
+		for (string au_name : au_reg_names)
+		{
+			for (auto au_reg : aus_reg)
+			{
+				if (au_name.compare(au_reg.first) == 0)
+				{
+					//cout << ", " << au_reg.second;
+					packet << (float)au_reg.second;
+					break;
+				}
+			}
+		}
+
+		if (aus_reg.size() == 0)
+		{
+			for (size_t p = 0; p < face_analyser_data.GetAURegNames().size(); ++p)
+			{
+				//cout << ", 0";
+				packet << 0;
+			}
+		}
+
+		packet << osc::EndMessage
+			<< osc::EndBundle;
+
+		oscTransmitSocket.Send(packet.Data(), packet.Size());
+
+		/*
+		// Print Class names and values (1, 2, 4, 5, 6, 7, 9, 10, 12, 14, 15, 17, 20, 23, 25, 26, 28, 45)
+		auto aus_class = face_analyser.GetCurrentAUsClass();
+		vector<string> au_class_names = face_analyser.GetAUClassNames();
+		std::sort(au_class_names.begin(), au_class_names.end());
+
+		std::sort(au_class_names.begin(), au_class_names.end());
+		for (string class_name : au_class_names)
+		{
+		cout << ", " << class_name << "_c";
+		}
+
+		// write out ar the correct index
+		for (string au_name : au_class_names)
+		{
+		for (auto au_class : aus_class)
+		{
+		if (au_name.compare(au_class.first) == 0)
+		{
+		cout << ", " << au_class.second;
+		break;
+		}
+		}
+		}
+
+		if (aus_class.size() == 0)
+		{
+		for (size_t p = 0; p < face_analyser.GetAUClassNames().size(); ++p)
+		{
+		cout << ", 0";
+		}
+		}
+
+		*/
 	}
 
 

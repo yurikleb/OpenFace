@@ -38,8 +38,6 @@
 #include "GazeEstimation.h"
 #include "OSC_Transmitter.h"
 #include "FaceAnalyser.h"
-#include "Face_utils.h"
-
 
 #include <fstream>
 #include <sstream>
@@ -93,6 +91,9 @@ vector<string> get_arguments(int argc, char **argv)
 // Some globals for tracking timing information for visualisation
 double fps_tracker = -1.0;
 int64 t0 = 0;
+
+//Output Face Action Units.
+void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser);
 
 // Visualising the results
 void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, const LandmarkDetector::CLNF& face_model, const LandmarkDetector::FaceModelParameters& det_parameters, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, int frame_count, double fx, double fy, double cx, double cy)
@@ -164,8 +165,6 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 }
 
 
-void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser);
-
 int main (int argc, char **argv)
 {
 
@@ -213,9 +212,11 @@ int main (int argc, char **argv)
 	det_parameters.track_gaze = true;
 
 
-	//Action Units Extraction Setup
+	//Action Units Extraction
+
+	double time_stamp = 0;
 	
-	// Search paths
+	// Search paths for AU models
 	boost::filesystem::path config_path = boost::filesystem::path(CONFIG_DIR);
 	boost::filesystem::path parent_path = boost::filesystem::path(arguments[0]).parent_path();
 	string au_loc;
@@ -246,7 +247,7 @@ int main (int argc, char **argv)
 		return 1;
 	}
 
-	//Load Prediction files
+	//Load Predictors files
 	string au_loc_local;
 	if (dynamic)
 	{
@@ -280,9 +281,10 @@ int main (int argc, char **argv)
 	// Make sure sim_scale is proportional to sim_size if not set
 	if (sim_scale == -1) sim_scale = sim_size * (0.7 / 112.0);
 
-	//use this to send AU 
+	//Create face Action Units (AU) analyser 
 	FaceAnalysis::FaceAnalyser face_analyser(vector<cv::Vec3d>(), sim_scale, sim_size, sim_size, au_loc, tri_loc);
-	///End of Action Units Extraction Setup
+	
+	//End of Action Units Extraction
 
 
 	while(!done) // this is not a for loop as we might also be reading from a webcam
@@ -436,13 +438,9 @@ int main (int argc, char **argv)
 			//Send Tracking data over OSC
 			OSC_Funcs::OSC_Transmitter::SendFaceData(clnf_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy, -1);
 
-			
-			//GET AUs
-			//change to true to use camera
-			double time_stamp = 0;
+			//Send Face Action Units (AUs)
 			face_analyser.AddNextFrame(captured_image, clnf_model, time_stamp, true, !det_parameters.quiet_mode);
-			cout << "\n ACTION UNITS: ";
-			output_AUs(face_analyser);
+			OSC_Funcs::OSC_Transmitter::SendAUs(face_analyser);
 
 			// output the tracked video
 			if (!output_video_files.empty())
@@ -485,63 +483,5 @@ int main (int argc, char **argv)
 	}
 
 	return 0;
-}
-
-
-
-
-void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser)
-{
-	auto aus_reg = face_analyser.GetCurrentAUsReg();
-
-	vector<string> au_reg_names = face_analyser.GetAURegNames();
-	std::sort(au_reg_names.begin(), au_reg_names.end());
-
-	// write out ar the correct index
-	for (string au_name : au_reg_names)
-	{
-		for (auto au_reg : aus_reg)
-		{
-			if (au_name.compare(au_reg.first) == 0)
-			{
-				cout << ", " << au_reg.second;
-				break;
-			}
-		}
-	}
-
-	if (aus_reg.size() == 0)
-	{
-		for (size_t p = 0; p < face_analyser.GetAURegNames().size(); ++p)
-		{
-			cout << ", 0";
-		}
-	}
-
-	auto aus_class = face_analyser.GetCurrentAUsClass();
-
-	vector<string> au_class_names = face_analyser.GetAUClassNames();
-	std::sort(au_class_names.begin(), au_class_names.end());
-
-	// write out ar the correct index
-	for (string au_name : au_class_names)
-	{
-		for (auto au_class : aus_class)
-		{
-			if (au_name.compare(au_class.first) == 0)
-			{
-				cout << ", " << au_class.second;
-				break;
-			}
-		}
-	}
-
-	if (aus_class.size() == 0)
-	{
-		for (size_t p = 0; p < face_analyser.GetAUClassNames().size(); ++p)
-		{
-			cout << ", 0";
-		}
-	}
 }
 
