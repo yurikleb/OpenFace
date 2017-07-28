@@ -15,9 +15,9 @@ Using OSC also allows the data to be sent to a remote server, thus allowing usin
 
 ## OSC Functionality
 
-The OSC client is incorporated into the "FaceLandmarkVid.cpp" Project
-The face landmark data, gaze data and pose data is sent to the localhost "127.0.0.1"
-over port 6448
+The OSC client is currently incorporated into the "FaceLandmarkVid.cpp" Project.
+
+The face landmarks, gaze and pose data is sent to localhost "127.0.0.1" over port 6448.
 
 #### The OSC Channels:
 
