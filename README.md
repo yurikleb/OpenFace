@@ -41,19 +41,18 @@ Face action units:
 **The Face Action Units extraction is a key feature in OpenFace which makes it a great tool for live emotion analysis.**
 
 The "/openFace/ActionUnits" channel transmits 17 values, which represent Action Units:  1, 2, 4, 5, 6, 7, 9, 10, 12, 14, 15, 17, 20, 23, 25, 26, and 45. 
-The valuses range is: 0 (not present), 1 (present at minimum intensity), 5 (present at maximum intensity).
+The values range is: 0 (not present), 1 (present at minimum intensity), 5 (present at maximum intensity).
 
 You can find more information about AUs and how to use them to analyse emotion <a href="https://en.wikipedia.org/wiki/Facial_Action_Coding_System">here</a> and <a href="https://www.cs.cmu.edu/%7Eface/facs.htm">here</a>
-
 More information about how OpenFace handles the Action Units can be found <a href="https://github.com/TadasBaltrusaitis/OpenFace/wiki/Action-Units">here </a>
-
-If visual studio throws an import error, make sure the project settings match the screenshots in the "./osc_settings" folder
 
 You can use OSCdata monitor for an easy data peview (make sure to add port 6448): https://www.kasperkamperman.com/blog/osc-datamonitor/
 
 You can find examples of using the data on different platforms in: "./osc_examples"
 
 ![Sample Gaze Tracking](https://github.com/yurikleb/OpenFace/blob/master/imgs/GazeTracking.gif)
+
+If visual studio throws an import error, make sure the project settings match the screenshots in the "./osc_settings" folder
 
 ## Functionality
 
