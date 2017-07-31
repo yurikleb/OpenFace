@@ -173,6 +173,9 @@ add_subdirectory(lib/3rdParty/dlib)
 add_subdirectory(lib/local/LandmarkDetector)
 # Facial Expression analysis library
 add_subdirectory(lib/local/FaceAnalyser)
+# OSC_Transmitter
+add_subdirectory(lib/local/OSC_Transmitter)
+
 # executables
 add_subdirectory(exe/FaceLandmarkImg)
 add_subdirectory(exe/FaceLandmarkVid)
