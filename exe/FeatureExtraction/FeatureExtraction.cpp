@@ -370,6 +370,7 @@ int main (int argc, char **argv)
 	// Make sure sim_scale is proportional to sim_size if not set
 	if (sim_scale == -1) sim_scale = sim_size * (0.7 / 112.0);
 
+	//use this to send AU 
 	FaceAnalysis::FaceAnalyser face_analyser(vector<cv::Vec3d>(), sim_scale, sim_size, sim_size, au_loc, tri_loc);
 		
 	while(!done) // this is not a for loop as we might also be reading from a webcam
@@ -563,7 +564,9 @@ int main (int argc, char **argv)
 			// But only if needed in output
 			if(!output_similarity_align.empty() || hog_output_file.is_open() || output_AUs)
 			{
+				//change to true to use camera
 				face_analyser.AddNextFrame(captured_image, face_model, time_stamp, false, !det_parameters.quiet_mode);
+				//face_analyser.GetCurrentAUsReg
 				face_analyser.GetLatestAlignedFace(sim_warped_img);
 
 				if(!det_parameters.quiet_mode)

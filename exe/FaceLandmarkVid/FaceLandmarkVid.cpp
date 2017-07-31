@@ -36,8 +36,9 @@
 // Libraries for landmark detection (includes CLNF and CLM modules)
 #include "LandmarkCoreIncludes.h"
 #include "GazeEstimation.h"
-#include <Face_utils.h>
-#include <FaceAnalyser.h>
+#include "OSC_Transmitter.h"
+#include "FaceAnalyser.h"
+#include "Face_utils.h"
 
 
 #include <fstream>
@@ -53,19 +54,9 @@
 #include <filesystem.hpp>
 #include <filesystem/fstream.hpp>
 
-//OSC Includes
-#include "osc/OscOutboundPacketStream.h"
-#include "ip/UdpSocket.h"
-
-//OSC Settings
-#define ADDRESS "127.0.0.1"
-#define PORT 6448
-#define OUTPUT_BUFFER_SIZE 2500
-
-UdpTransmitSocket transmitSocket(IpEndpointName(ADDRESS, PORT));
-
-char buffer[OUTPUT_BUFFER_SIZE];
-osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
+#ifndef CONFIG_DIR
+#define CONFIG_DIR "~"
+#endif
 
 #define INFO_STREAM( stream ) \
 std::cout << stream << std::endl
@@ -86,9 +77,6 @@ static void printErrorAndAbort( const std::string & error )
 printErrorAndAbort( std::string( "Fatal error: " ) + stream )
 
 using namespace std;
-using namespace boost::filesystem;
-
-string emotion="-";
 
 vector<string> get_arguments(int argc, char **argv)
 {
@@ -106,49 +94,19 @@ vector<string> get_arguments(int argc, char **argv)
 double fps_tracker = -1.0;
 int64 t0 = 0;
 
-void sendOSCInt(char* address,int value){
-	//Send data via OSC ( 3 gaze coords + 136 landmarks = 142 data points) 
-		p.Clear();
-		
-		//Gaze vectors
-		p << osc::BeginBundleImmediate
-			<< osc::BeginMessage(address);
-		
-		p << value;
-		p << osc::EndMessage
-			<< osc::EndBundle;
-
-		transmitSocket.Send(p.Data(), p.Size());
-}
-void sendOSCBool(char* address,bool value){
-	//Send data via OSC ( 3 gaze coords + 136 landmarks = 142 data points) 
-		p.Clear();
-		
-		//Gaze vectors
-		p << osc::BeginBundleImmediate
-			<< osc::BeginMessage(address);
-		
-		p << value;
-		p << osc::EndMessage
-			<< osc::EndBundle;
-
-		transmitSocket.Send(p.Data(), p.Size());
-}
-
 // Visualising the results
 void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, const LandmarkDetector::CLNF& face_model, const LandmarkDetector::FaceModelParameters& det_parameters, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, int frame_count, double fx, double fy, double cx, double cy)
 {
-
 	// Drawing the facial landmarks on the face and the bounding box around it if tracking is successful and initialised
 	double detection_certainty = face_model.detection_certainty;
 	bool detection_success = face_model.detection_success;
 
 	double visualisation_boundary = 0.2;
 
-	// Only draw + send data over OSC if the reliability is reasonable, the value is slightly ad-hoc
+	// Only draw if the reliability is reasonable, the value is slightly ad-hoc
 	if (detection_certainty < visualisation_boundary)
 	{
-		
+
 		//Draw Face Landmarks
 		LandmarkDetector::Draw(captured_image, face_model);
 
@@ -167,39 +125,12 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 
 		// Draw it in reddish if uncertain, blueish if certain
 		LandmarkDetector::DrawBox(captured_image, pose_estimate_to_draw, cv::Scalar((1 - vis_certainty)*255.0, 0, vis_certainty * 255), thickness, fx, fy, cx, cy);
-		
+
 		//Draw Gaze
 		if (det_parameters.track_gaze && detection_success && face_model.eye_model)
 		{
 			FaceAnalysis::DrawGaze(captured_image, face_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
 		}
-
-		//Send data via OSC ( 3 gaze coords + 136 landmarks = 142 data points) 
-		p.Clear();
-		
-		//Gaze vectors
-		p << osc::BeginBundleImmediate
-			<< osc::BeginMessage("/openFace/allData");
-			//<< gazeDirection0.x << gazeDirection0.y << gazeDirection0.z
-			//<< gazeDirection1.x << gazeDirection1.y << gazeDirection1.z;
-
-		//Head pose vector
-		//for (int i = 0; i < 6; i++) {
-		//	p << (float)pose_estimate_to_draw[i];
-		//}
-
-		//Camera Data
-		//p << (float)fx << (float)fy << (float)cx << (float)cy;
-
-		//Face landmarks
-		for (int i = 0; i < face_model.detected_landmarks.rows; i++) {
-			p << (float)face_model.detected_landmarks[i][0];
-		}
-
-		p << osc::EndMessage
-			<< osc::EndBundle;
-
-		transmitSocket.Send(p.Data(), p.Size());
 
 	}
 
@@ -216,8 +147,7 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 	std::sprintf(fpsC, "%d", (int)fps_tracker);
 	string fpsSt("FPS:");
 	fpsSt += fpsC;
-	fpsSt += "   estimating: " + emotion; 
-	cv::putText(captured_image, fpsSt, cv::Point(10, 27), CV_FONT_HERSHEY_SIMPLEX, 0.95, CV_RGB(255, 0, 0));
+	cv::putText(captured_image, fpsSt, cv::Point(10, 20), CV_FONT_HERSHEY_SIMPLEX, 0.5, CV_RGB(255, 0, 0));
 
 	if (!det_parameters.quiet_mode)
 	{
@@ -233,385 +163,11 @@ void visualise_tracking(cv::Mat& captured_image, cv::Mat_<float>& depth_image, c
 	}
 }
 
-// Useful utility for creating directories for storing the output files
-void create_directory_from_file(string output_path)
-{
 
-	// Creating the right directory structure
-	
-	// First get rid of the file
-	auto p = path(path(output_path).parent_path());
-
-	if(!p.empty() && !boost::filesystem::exists(p))		
-	{
-		bool success = boost::filesystem::create_directories(p);
-		if(!success)
-		{
-			cout << "Failed to create a directory... " << p.string() << endl;
-		}
-	}
-}
-
-void create_directory(string output_path)
-{
-
-	// Creating the right directory structure
-	auto p = path(output_path);
-
-	if(!boost::filesystem::exists(p))		
-	{
-		bool success = boost::filesystem::create_directories(p);
-		
-		if(!success)
-		{
-			cout << "Failed to create a directory..." << p.string() << endl;
-		}
-	}
-}
-
-// Output all of the information into one file in one go (quite a few parameters, but simplifies the flow)
-void outputAllFeatures(bool output_2D_landmarks, bool output_3D_landmarks,
-	bool output_model_params, bool output_pose, bool output_AUs, bool output_gaze,
-	const LandmarkDetector::CLNF& face_model, int frame_count, double time_stamp, bool detection_success,
-	cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, const cv::Vec6d& pose_estimate, double fx, double fy, double cx, double cy,
-	const FaceAnalysis::FaceAnalyser& face_analyser)
-{
-
-	double confidence = 0.5 * (1 - face_model.detection_certainty);
-
-	// *output_file << frame_count + 1 << ", " << time_stamp << ", " << confidence << ", " << detection_success;
-
-	// Output the estimated gaze
-	// if (output_gaze)
-	// {
-	// 	*output_file << ", " << gazeDirection0.x << ", " << gazeDirection0.y << ", " << gazeDirection0.z
-	// 		<< ", " << gazeDirection1.x << ", " << gazeDirection1.y << ", " << gazeDirection1.z;
-	// }
-
-	// Output the estimated head pose
-	// if (output_pose)
-	// {
-	// 	if(face_model.tracking_initialised)
-	// 	{
-	// 		*output_file << ", " << pose_estimate[0] << ", " << pose_estimate[1] << ", " << pose_estimate[2]
-	// 			<< ", " << pose_estimate[3] << ", " << pose_estimate[4] << ", " << pose_estimate[5];
-	// 	}
-	// 	else
-	// 	{
-	// 		*output_file << ", 0, 0, 0, 0, 0, 0";
-	// 	}
-	// }
-
-	// Output the detected 2D facial landmarks
-	// if (output_2D_landmarks)
-	// {
-	// 	for (int i = 0; i < face_model.pdm.NumberOfPoints() * 2; ++i)
-	// 	{
-	// 		if(face_model.tracking_initialised)
-	// 		{
-	// 			*output_file << ", " << face_model.detected_landmarks.at<double>(i);
-	// 		}
-	// 		else
-	// 		{
-	// 			*output_file << ", 0";
-	// 		}
-	// 	}
-	// }
-
-	// Output the detected 3D facial landmarks
-	// if (output_3D_landmarks)
-	// {
-	// 	cv::Mat_<double> shape_3D = face_model.GetShape(fx, fy, cx, cy);
-	// 	for (int i = 0; i < face_model.pdm.NumberOfPoints() * 3; ++i)
-	// 	{
-	// 		if (face_model.tracking_initialised)
-	// 		{
-	// 			*output_file << ", " << shape_3D.at<double>(i);
-	// 		}
-	// 		else
-	// 		{
-	// 			*output_file << ", 0";
-	// 		}
-	// 	}
-	// }
-
-	// if (output_model_params)
-	// {
-	// 	for (int i = 0; i < 6; ++i)
-	// 	{
-	// 		if (face_model.tracking_initialised)
-	// 		{
-	// 			*output_file << ", " << face_model.params_global[i];
-	// 		}
-	// 		else
-	// 		{
-	// 			*output_file << ", 0";
-	// 		}
-	// 	}
-	// 	for (int i = 0; i < face_model.pdm.NumberOfModes(); ++i)
-	// 	{
-	// 		if(face_model.tracking_initialised)
-	// 		{
-	// 			*output_file << ", " << face_model.params_local.at<double>(i, 0);
-	// 		}
-	// 		else
-	// 		{
-	// 			*output_file << ", 0";
-	// 		}
-	// 	}
-	// }
-
-
-
-	if (output_AUs)
-	{
-		auto aus_reg = face_analyser.GetCurrentAUsReg();
-
-		vector<string> au_reg_names = face_analyser.GetAURegNames();
-		std::sort(au_reg_names.begin(), au_reg_names.end());
-
-		//frown: AU15,AU17
-		//smile: AU12
-		/*
-		float AU12,AU14,AU15,AU17;
-		// write out ar the correct index
-		// floating point values here
-		for (string au_name : au_reg_names)
-		{
-			for (auto au_reg : aus_reg)
-			{
-				if (au_name.compare(au_reg.first) == 0)
-				{
-					// *output_file << ", " << au_reg.second;
-					// cout << " au_name : " << au_name << " = "  << au_reg.second << endl;
-					if(au_name == "AU12"){
-						AU12 = au_reg.second;
-					}
-					if(au_name == "AU14"){
-						AU14 = au_reg.second;
-					}
-					if(au_name == "AU15"){
-						AU15 = au_reg.second;
-					}
-					if(au_name == "AU17"){
-						AU17 = au_reg.second;
-					}
-					break;
-				}
-			}
-		}
-
-		cout << "AU12=" << AU12 << "\tAU14=" << AU14 << "\tAU15=" << AU15 << "\tAU17=" << AU17 << endl;
-		// smile = AU12 > 1.7
-		// frown = AU15 > 1.7
-		if(AU12 > 1.7){
-			emotion = ":)";
-		}else
-		if(AU15 > 1.7){
-			emotion = ":(";
-		}else{
-			emotion = ":|";
-		}
-		//*/
-		if (aus_reg.size() == 0)
-		{
-			for (size_t p = 0; p < face_analyser.GetAURegNames().size(); ++p)
-			{
-				// *output_file << ", 0";
-			}
-		}
-
-		auto aus_class = face_analyser.GetCurrentAUsClass();
-
-		vector<string> au_class_names = face_analyser.GetAUClassNames();
-		std::sort(au_class_names.begin(), au_class_names.end());
-
-		// write out ar the correct index
-		// zeros and ones over here
-		// smile: AU12, AU14 ~AU06
-		// frown: AU15, AU17
-		//*
-		bool AU12,AU14,AU15,AU17;
-		for (string au_name : au_class_names)
-		{
-			for (auto au_class : aus_class)
-			{
-				if (au_name.compare(au_class.first) == 0)
-				{
-					// *output_file << ", " << au_class.second;
-					cout << " au_name : " << au_name << " = " << au_class.second << endl; 
-					if(au_name == "AU12"){
-						AU12 = au_class.second;
-					}
-					if(au_name == "AU14"){
-						AU14 = au_class.second;
-					}
-					if(au_name == "AU15"){
-						AU15 = au_class.second;
-					}
-					if(au_name == "AU17"){
-						AU17 = au_class.second;
-					}
-					break;
-				}
-			}
-		}
-
-		if(AU12 && AU14){
-			emotion = ":)";
-		}else
-		if(AU15 && AU17){
-			emotion = ":(";
-		}else{
-			emotion = ":|";
-		}
-		sendOSCBool("/AU12",AU12);
-		sendOSCBool("/AU14",AU14);
-		sendOSCBool("/AU15",AU15);
-		sendOSCBool("/AU17",AU17);
-		//*/
-
-		if (aus_class.size() == 0)
-		{
-			for (size_t p = 0; p < face_analyser.GetAUClassNames().size(); ++p)
-			{
-				// *output_file << ", 0";
-			}
-		}
-	}
-	// *output_file << endl;
-}
-
-void get_output_feature_params(vector<string> &output_similarity_aligned, vector<string> &output_hog_aligned_files, double &similarity_scale,
-	int &similarity_size, bool &grayscale, bool& verbose, bool& dynamic,
-	bool &output_2D_landmarks, bool &output_3D_landmarks, bool &output_model_params, bool &output_pose, bool &output_AUs, bool &output_gaze,
-	vector<string> &arguments)
-{
-	output_similarity_aligned.clear();
-	output_hog_aligned_files.clear();
-
-	bool* valid = new bool[arguments.size()];
-
-	for (size_t i = 0; i < arguments.size(); ++i)
-	{
-		valid[i] = true;
-	}
-
-	string output_root = "";
-
-	// By default the model is dynamic
-	dynamic = true;
-
-	string separator = string(1, boost::filesystem::path::preferred_separator);
-
-	// First check if there is a root argument (so that videos and outputs could be defined more easilly)
-	for (size_t i = 0; i < arguments.size(); ++i)
-	{
-		if (arguments[i].compare("-root") == 0)
-		{
-			output_root = arguments[i + 1] + separator;
-			i++;
-		}
-		if (arguments[i].compare("-outroot") == 0)
-		{
-			output_root = arguments[i + 1] + separator;
-			i++;
-		}
-	}
-
-	for (size_t i = 0; i < arguments.size(); ++i)
-	{
-		if (arguments[i].compare("-simalign") == 0)
-		{
-			output_similarity_aligned.push_back(output_root + arguments[i + 1]);
-			create_directory(output_root + arguments[i + 1]);
-			valid[i] = false;
-			valid[i + 1] = false;
-			i++;
-		}
-		else if (arguments[i].compare("-hogalign") == 0)
-		{
-			output_hog_aligned_files.push_back(output_root + arguments[i + 1]);
-			create_directory_from_file(output_root + arguments[i + 1]);
-			valid[i] = false;
-			valid[i + 1] = false;
-			i++;
-		}
-		else if (arguments[i].compare("-verbose") == 0)
-		{
-			verbose = true;
-		}
-		else if (arguments[i].compare("-au_static") == 0)
-		{
-			dynamic = false;
-		}
-		else if (arguments[i].compare("-g") == 0)
-		{
-			grayscale = true;
-			valid[i] = false;
-		}
-		else if (arguments[i].compare("-simscale") == 0)
-		{
-			similarity_scale = stod(arguments[i + 1]);
-			valid[i] = false;
-			valid[i + 1] = false;
-			i++;
-		}
-		else if (arguments[i].compare("-simsize") == 0)
-		{
-			similarity_size = stoi(arguments[i + 1]);
-			valid[i] = false;
-			valid[i + 1] = false;
-			i++;
-		}
-		else if (arguments[i].compare("-no2Dfp") == 0)
-		{
-			output_2D_landmarks = false;
-			valid[i] = false;
-		}
-		else if (arguments[i].compare("-no3Dfp") == 0)
-		{
-			output_3D_landmarks = false;
-			valid[i] = false;
-		}
-		else if (arguments[i].compare("-noMparams") == 0)
-		{
-			output_model_params = false;
-			valid[i] = false;
-		}
-		else if (arguments[i].compare("-noPose") == 0)
-		{
-			output_pose = false;
-			valid[i] = false;
-		}
-		else if (arguments[i].compare("-noAUs") == 0)
-		{
-			output_AUs = false;
-			valid[i] = false;
-		}
-		else if (arguments[i].compare("-noGaze") == 0)
-		{
-			output_gaze = false;
-			valid[i] = false;
-		}
-	}
-
-	for (int i = arguments.size() - 1; i >= 0; --i)
-	{
-		if (!valid[i])
-		{
-			arguments.erase(arguments.begin() + i);
-		}
-	}
-
-}
+void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser);
 
 int main (int argc, char **argv)
 {
-	//OSC INIT
-	(void)argc; // suppress unused parameter warnings
-	(void)argv; // suppress unused parameter warnings
-	INFO_STREAM("OSC Client Online!");
 
 	vector<string> arguments = get_arguments(argc, argv);
 
@@ -652,52 +208,37 @@ int main (int argc, char **argv)
 
 	// If multiple video files are tracked, use this to indicate if we are done
 	bool done = false;	
-	// int f_n = -1;
+	int f_n = -1;
 	
 	det_parameters.track_gaze = true;
 
-	//AU setup
-	bool verbose = true;
-	boost::filesystem::path config_path = boost::filesystem::path(".");
-	boost::filesystem::path parent_path = boost::filesystem::path(".").parent_path();
 
-	vector<string> output_similarity_align;
-	vector<string> output_hog_align_files;
-
+	//Action Units Extraction Setup
+	
+	// Search paths
+	boost::filesystem::path config_path = boost::filesystem::path(CONFIG_DIR);
+	boost::filesystem::path parent_path = boost::filesystem::path(arguments[0]).parent_path();
+	string au_loc;
+	
 	double sim_scale = -1;
 	int sim_size = 112;
-	bool grayscale = false;
-	bool video_output = false;
 	bool dynamic = true; // Indicates if a dynamic AU model should be used (dynamic is useful if the video is long enough to include neutral expressions)
-	int num_hog_rows;
-	int num_hog_cols;
 
-	// By default output all parameters, but these can be turned off to get smaller files or slightly faster processing times
-	// use -no2Dfp, -no3Dfp, -noMparams, -noPose, -noAUs, -noGaze to turn them off
-	bool output_2D_landmarks = true;
-	bool output_3D_landmarks = true;
-	bool output_model_params = true;
-	bool output_pose = true;
-	bool output_AUs = true;
-	bool output_gaze = true;
 
-	get_output_feature_params(output_similarity_align, output_hog_align_files, sim_scale, sim_size, grayscale, verbose, dynamic,
-		output_2D_landmarks, output_3D_landmarks, output_model_params, output_pose, output_AUs, output_gaze, arguments);
-
-	// Used for image masking
+	//Load triangulation files, Used for image masking
 	string tri_loc;
 	boost::filesystem::path tri_loc_path = boost::filesystem::path("model/tris_68_full.txt");
 	if (boost::filesystem::exists(tri_loc_path))
 	{
 		tri_loc = tri_loc_path.string();
 	}
-	else if (boost::filesystem::exists(parent_path/tri_loc_path))
+	else if (boost::filesystem::exists(parent_path / tri_loc_path))
 	{
-		tri_loc = (parent_path/tri_loc_path).string();
+		tri_loc = (parent_path / tri_loc_path).string();
 	}
-	else if (boost::filesystem::exists(config_path/tri_loc_path))
+	else if (boost::filesystem::exists(config_path / tri_loc_path))
 	{
-		tri_loc = (config_path/tri_loc_path).string();
+		tri_loc = (config_path / tri_loc_path).string();
 	}
 	else
 	{
@@ -705,18 +246,7 @@ int main (int argc, char **argv)
 		return 1;
 	}
 
-	// Will warp to scaled mean shape
-	// cv::Mat_<double> similarity_normalised_shape = face_model.pdm.mean_shape * sim_scale;
-	// // Discard the z component
-	// similarity_normalised_shape = similarity_normalised_shape(cv::Rect(0, 0, 1, 2*similarity_normalised_shape.rows/3)).clone();
-
-	// If multiple video files are tracked, use this to indicate if we are done
-	// bool done = false;	
-	int f_n = -1;
-	int curr_img = -1;
-
-	string au_loc;
-
+	//Load Prediction files
 	string au_loc_local;
 	if (dynamic)
 	{
@@ -750,7 +280,10 @@ int main (int argc, char **argv)
 	// Make sure sim_scale is proportional to sim_size if not set
 	if (sim_scale == -1) sim_scale = sim_size * (0.7 / 112.0);
 
+	//use this to send AU 
 	FaceAnalysis::FaceAnalyser face_analyser(vector<cv::Vec3d>(), sim_scale, sim_size, sim_size, au_loc, tri_loc);
+	///End of Action Units Extraction Setup
+
 
 	while(!done) // this is not a for loop as we might also be reading from a webcam
 	{
@@ -790,8 +323,6 @@ int main (int argc, char **argv)
 		{
 			INFO_STREAM( "Attempting to capture from device: " << device );
 			video_capture = cv::VideoCapture( device );
-			video_capture.set(CV_CAP_PROP_FRAME_WIDTH ,640);
-			video_capture.set(CV_CAP_PROP_FRAME_HEIGHT,480);
 
 			// Read a first frame often empty in camera
 			cv::Mat captured_image;
@@ -842,9 +373,6 @@ int main (int argc, char **argv)
 
 		// Use for timestamping if using a webcam
 		int64 t_initial = cv::getTickCount();
-
-		// Timestamp in seconds of current processing
-		double time_stamp = 0;
 
 		INFO_STREAM( "Starting tracking");
 		while(!captured_image.empty())
@@ -902,8 +430,20 @@ int main (int argc, char **argv)
 				FaceAnalysis::EstimateGaze(clnf_model, gazeDirection1, fx, fy, cx, cy, false);
 			}
 
+			//Visualize Tracking Data
 			visualise_tracking(captured_image, depth_image, clnf_model, det_parameters, gazeDirection0, gazeDirection1, frame_count, fx, fy, cx, cy);
 			
+			//Send Tracking data over OSC
+			OSC_Funcs::OSC_Transmitter::SendFaceData(clnf_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy, -1);
+
+			
+			//GET AUs
+			//change to true to use camera
+			double time_stamp = 0;
+			face_analyser.AddNextFrame(captured_image, clnf_model, time_stamp, true, !det_parameters.quiet_mode);
+			cout << "\n ACTION UNITS: ";
+			output_AUs(face_analyser);
+
 			// output the tracked video
 			if (!output_video_files.empty())
 			{
@@ -912,17 +452,6 @@ int main (int argc, char **argv)
 
 
 			video_capture >> captured_image;
-
-			cv::Mat sim_warped_img;
-			face_analyser.AddNextFrame(captured_image, clnf_model, time_stamp, false, !det_parameters.quiet_mode);
-			face_analyser.GetLatestAlignedFace(sim_warped_img);
-
-			cv::Vec6d pose_estimate = LandmarkDetector::GetCorrectedPoseWorld(clnf_model, fx, fy, cx, cy);
-
-			// Output the landmarks, pose, gaze, parameters and AUs
-			outputAllFeatures(output_2D_landmarks, output_3D_landmarks, output_model_params, output_pose, output_AUs, output_gaze,
-				clnf_model, frame_count, time_stamp, detection_success, gazeDirection0, gazeDirection1,
-				pose_estimate, fx, fy, cx, cy, face_analyser);
 		
 			// detect key presses
 			char character_press = cv::waitKey(1);
@@ -956,5 +485,63 @@ int main (int argc, char **argv)
 	}
 
 	return 0;
+}
+
+
+
+
+void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser)
+{
+	auto aus_reg = face_analyser.GetCurrentAUsReg();
+
+	vector<string> au_reg_names = face_analyser.GetAURegNames();
+	std::sort(au_reg_names.begin(), au_reg_names.end());
+
+	// write out ar the correct index
+	for (string au_name : au_reg_names)
+	{
+		for (auto au_reg : aus_reg)
+		{
+			if (au_name.compare(au_reg.first) == 0)
+			{
+				cout << ", " << au_reg.second;
+				break;
+			}
+		}
+	}
+
+	if (aus_reg.size() == 0)
+	{
+		for (size_t p = 0; p < face_analyser.GetAURegNames().size(); ++p)
+		{
+			cout << ", 0";
+		}
+	}
+
+	auto aus_class = face_analyser.GetCurrentAUsClass();
+
+	vector<string> au_class_names = face_analyser.GetAUClassNames();
+	std::sort(au_class_names.begin(), au_class_names.end());
+
+	// write out ar the correct index
+	for (string au_name : au_class_names)
+	{
+		for (auto au_class : aus_class)
+		{
+			if (au_name.compare(au_class.first) == 0)
+			{
+				cout << ", " << au_class.second;
+				break;
+			}
+		}
+	}
+
+	if (aus_class.size() == 0)
+	{
+		for (size_t p = 0; p < face_analyser.GetAUClassNames().size(); ++p)
+		{
+			cout << ", 0";
+		}
+	}
 }
 

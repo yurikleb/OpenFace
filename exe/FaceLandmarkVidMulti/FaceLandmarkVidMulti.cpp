@@ -35,6 +35,7 @@
 
 // FaceTrackingVidMulti.cpp : Defines the entry point for the multiple face tracking console application.
 #include "LandmarkCoreIncludes.h"
+#include "OSC_Transmitter.h"
 
 #include <fstream>
 #include <sstream>
@@ -121,6 +122,8 @@ int main (int argc, char **argv)
 	det_params.reinit_video_every = -1;
 
 	det_params.curr_face_detector = LandmarkDetector::FaceModelParameters::HOG_SVM_DETECTOR;
+
+	det_params.track_gaze = true;
 
 	vector<LandmarkDetector::FaceModelParameters> det_parameters;
 	det_parameters.push_back(det_params);
@@ -384,6 +387,10 @@ int main (int argc, char **argv)
 					
 					// Draw it in reddish if uncertain, blueish if certain
 					LandmarkDetector::DrawBox(disp_image, pose_estimate, cv::Scalar((1-detection_certainty)*255.0,0, detection_certainty*255), thickness, fx, fy, cx, cy);
+
+					//Send data over OSC
+					cv::Point3f nullVector = (0, 0, 0);
+					OSC_Funcs::OSC_Transmitter::SendFaceData(clnf_models[model], nullVector, nullVector, fx, fy, cx, cy, model);
 				}
 			}
 

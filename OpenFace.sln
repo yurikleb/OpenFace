@@ -23,6 +23,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FaceLandmarkVid", "exe\Face
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FaceLandmarkImg", "exe\FaceLandmarkImg\FaceLandmarkImg.vcxproj", "{DDC3535E-526C-44EC-9DF4-739E2D3A323B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OSC_Transmitter", "lib\local\OSC_Transmitter\OSC_Transmitter.vcxproj", "{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -95,6 +97,14 @@ Global
 		{DDC3535E-526C-44EC-9DF4-739E2D3A323B}.Release|Win32.Build.0 = Release|Win32
 		{DDC3535E-526C-44EC-9DF4-739E2D3A323B}.Release|x64.ActiveCfg = Release|x64
 		{DDC3535E-526C-44EC-9DF4-739E2D3A323B}.Release|x64.Build.0 = Release|x64
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}.Debug|Win32.Build.0 = Debug|Win32
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}.Debug|x64.ActiveCfg = Debug|x64
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}.Debug|x64.Build.0 = Debug|x64
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}.Release|Win32.ActiveCfg = Release|Win32
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}.Release|Win32.Build.0 = Release|Win32
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}.Release|x64.ActiveCfg = Release|x64
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -108,5 +118,6 @@ Global
 		{2D80FA0B-2DE8-4475-BA5A-C08A9E1EDAAC} = {9961DDAC-BE6E-4A6E-8EEF-FFC7D67BD631}
 		{34032CF2-1B99-4A25-9050-E9C13DD4CD0A} = {9961DDAC-BE6E-4A6E-8EEF-FFC7D67BD631}
 		{DDC3535E-526C-44EC-9DF4-739E2D3A323B} = {9961DDAC-BE6E-4A6E-8EEF-FFC7D67BD631}
+		{1FFC692F-A2D6-4F14-AC08-0614DD2A182D} = {99FEBA13-BDDF-4076-B57E-D8EF4076E20D}
 	EndGlobalSection
 EndGlobal

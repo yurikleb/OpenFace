@@ -1093,9 +1093,11 @@ void Draw(cv::Mat img, const cv::Mat_<double>& shape2D, const cv::Mat_<int>& vis
 
 			cv::Point nextFeaturePoint(cvRound(shape2D.at<double>(next_point) * (double)draw_multiplier), cvRound(shape2D.at<double>(next_point + n) * (double)draw_multiplier));
 			if( i < 8 || i > 19)
-				cv::line(img, featurePoint, nextFeaturePoint, cv::Scalar(255, 0, 0), thickness_2, CV_AA, draw_shiftbits);
+				//Draw Eyelids
+				cv::line(img, featurePoint, nextFeaturePoint, cv::Scalar(255, 255, 0), thickness_2, CV_AA, draw_shiftbits);
 			else
-				cv::line(img, featurePoint, nextFeaturePoint, cv::Scalar(0, 0, 255), thickness_2, CV_AA, draw_shiftbits);
+				//Draw eye outline
+				cv::line(img, featurePoint, nextFeaturePoint, cv::Scalar(255, 255, 0), thickness_2, CV_AA, draw_shiftbits);
 
 
 		}
@@ -1164,14 +1166,17 @@ void Draw(cv::Mat img, const CLNF& clnf_model)
 	int idx = clnf_model.patch_experts.GetViewIdx(clnf_model.params_global, 0);
 
 	// Because we only draw visible points, need to find which points patch experts consider visible at a certain orientation
+	//face landmarks
 	Draw(img, clnf_model.detected_landmarks, clnf_model.patch_experts.visibilities[0][idx]);
 
 	// If the model has hierarchical updates draw those too
+	// Eye Landmarks
 	for(size_t i = 0; i < clnf_model.hierarchical_models.size(); ++i)
 	{
 		if(clnf_model.hierarchical_models[i].pdm.NumberOfPoints() != clnf_model.hierarchical_mapping[i].size())
 		{
 			Draw(img, clnf_model.hierarchical_models[i]);
+			//cout << i << " ";
 		}
 	}
 }
