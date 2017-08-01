@@ -523,6 +523,7 @@ void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser)
 	vector<string> au_class_names = face_analyser.GetAUClassNames();
 	std::sort(au_class_names.begin(), au_class_names.end());
 
+	bool AU12,AU14,AU15,AU17;
 	// write out ar the correct index
 	for (string au_name : au_class_names)
 	{
@@ -531,10 +532,31 @@ void output_AUs(const FaceAnalysis::FaceAnalyser& face_analyser)
 			if (au_name.compare(au_class.first) == 0)
 			{
 				cout << ", " << au_class.second;
+
+					if(au_name == "AU12"){
+						AU12 = au_class.second;
+					}
+					if(au_name == "AU14"){
+						AU14 = au_class.second;
+					}
+					if(au_name == "AU15"){
+						AU15 = au_class.second;
+					}
+					if(au_name == "AU17"){
+						AU17 = au_class.second;
+					}
+
+
 				break;
 			}
 		}
 	}
+
+	OSC_Funcs::OSC_Transmitter::sendAUBool("/AU12",AU12);
+	OSC_Funcs::OSC_Transmitter::sendAUBool("/AU14",AU14);
+	OSC_Funcs::OSC_Transmitter::sendAUBool("/AU15",AU15);
+	OSC_Funcs::OSC_Transmitter::sendAUBool("/AU17",AU17);
+
 
 	if (aus_class.size() == 0)
 	{

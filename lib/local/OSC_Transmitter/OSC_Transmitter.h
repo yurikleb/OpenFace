@@ -22,6 +22,7 @@ namespace OSC_Funcs
 		
 		// Sends OSC Messege
 		static void SendFaceData(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy, int modelId);
+		static void sendAUBool(char* address,bool value);
 
 
 	};

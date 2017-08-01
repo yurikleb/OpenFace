@@ -103,6 +103,20 @@ namespace OSC_Funcs
 		oscTransmitSocket.Send(packet.Data(), packet.Size());
 	}
 
+	void OSC_Transmitter::sendAUBool(char* address,bool value){
+		packet.Clear();
+		
+		packet << osc::BeginBundleImmediate
+		  	   << osc::BeginMessage(address);
+		
+		packet << value;
+		packet << osc::EndMessage
+		  	   << osc::EndBundle;
+
+		oscTransmitSocket.Send(packet.Data(), packet.Size());
+	}
+
+
 	//Send Face Data Over OSC used in FaceLandmarkVid.cpp and in FaceLandmarkVidMulti.cpp
 	void OSC_Transmitter::SendFaceData(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy, int modelId) {
 
