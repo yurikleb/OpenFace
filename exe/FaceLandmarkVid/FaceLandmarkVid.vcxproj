@@ -195,9 +195,6 @@
     <ProjectReference Include="..\..\lib\local\OSC_Transmitter\OSC_Transmitter.vcxproj">
       <Project>{1ffc692f-a2d6-4f14-ac08-0614dd2a182d}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\FeatureExtraction\FeatureExtraction.vcxproj">
-      <Project>{8a23c00d-767d-422d-89a3-cf225e3dab4b}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
