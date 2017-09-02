@@ -23,6 +23,7 @@ namespace OSC_Funcs
 		
 		// Sends Face Data over OSC: Lenadmarks + gaze vectors + headpose
 		static void SendFaceData(const LandmarkDetector::CLNF& face_model, cv::Point3f gazeDirection0, cv::Point3f gazeDirection1, double fx, double fy, double cx, double cy, int modelId);
+		static void sendAUBool(char* address,bool value);
 
 		//Sends face Action Units over OSC
 		static void OSC_Transmitter::SendAUs(const FaceAnalysis::FaceAnalyser& face_analyser_data);

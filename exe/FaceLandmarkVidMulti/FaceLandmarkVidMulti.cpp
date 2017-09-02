@@ -389,7 +389,7 @@ int main (int argc, char **argv)
 					LandmarkDetector::DrawBox(disp_image, pose_estimate, cv::Scalar((1-detection_certainty)*255.0,0, detection_certainty*255), thickness, fx, fy, cx, cy);
 
 					//Send data over OSC
-					cv::Point3f nullVector = (0, 0, 0);
+					cv::Point3f nullVector;// = (0, 0, 0);
 					OSC_Funcs::OSC_Transmitter::SendFaceData(clnf_models[model], nullVector, nullVector, fx, fy, cx, cy, model);
 				}
 			}
