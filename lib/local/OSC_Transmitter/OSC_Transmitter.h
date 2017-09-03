@@ -26,7 +26,7 @@ namespace OSC_Funcs
 		static void sendAUBool(char* address,bool value);
 
 		//Sends face Action Units over OSC
-		static void OSC_Transmitter::SendAUs(const FaceAnalysis::FaceAnalyser& face_analyser_data);
+		static void SendAUs(const FaceAnalysis::FaceAnalyser& face_analyser_data);
 
 
 	};
