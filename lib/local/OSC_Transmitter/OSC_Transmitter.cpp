@@ -48,12 +48,14 @@ namespace OSC_Funcs
 	}
 
 	//Send 3D Landmarks via OSC Messeges
-	void send_landmarks_via_osc(char* oscAddress, cv::Mat_<double>& theLandmarks) {
+	void send_landmarks_via_osc(string oscAddress, cv::Mat_<double>& theLandmarks) {
 
+		const char *oscAddressChar = oscAddress.c_str();
+		
 		packet.Clear();
 
 		packet << osc::BeginBundleImmediate
-			<< osc::BeginMessage(oscAddress);
+			<< osc::BeginMessage(oscAddressChar);
 
 		for (int i = 0; i < theLandmarks.cols; i++) {
 			for (int j = 0; j < theLandmarks.rows; j++) {
@@ -81,8 +83,11 @@ namespace OSC_Funcs
 	}
 
 	//Send Gaze Vectors
-	void send_gaze_via_osc(char* oscAddress, cv::Mat eyeLdmks3d, cv::Point3f gazeVecAxis)
+	void send_gaze_via_osc(string oscAddress, cv::Mat eyeLdmks3d, cv::Point3f gazeVecAxis)
 	{
+		const char *oscAddressChar = oscAddress.c_str();
+
+
 		//cv::Mat eyeLdmks3d_left = clnf_model.hierarchical_models[part_left].GetShape(fx, fy, cx, cy);
 		cv::Point3f pupil_pos = GetPupilCenter(eyeLdmks3d);
 
@@ -93,7 +98,7 @@ namespace OSC_Funcs
 		packet.Clear();
 
 		packet << osc::BeginBundleImmediate
-			<< osc::BeginMessage(oscAddress);
+			<< osc::BeginMessage(oscAddressChar);
 
 		packet << (float)points[0].x << (float)points[0].y << (float)points[0].z << (float)points[1].x << (float)points[1].y << (float)points[1].z;
 
@@ -111,9 +116,10 @@ namespace OSC_Funcs
 		
 		if (modelId > -1) {
 			oscAddressPrefix += "faceId_" + to_string(modelId) + "/";
-			//cout << oscAddressPrefix << "\n";
 		}
-	
+		
+		//cout << oscAddressPrefix << "\n";
+
 		//store 3D face landmarks
 		//fx,fy,cx,cy = Camera focal length and optical centre
 		cv::Mat_<double> userFaceLandmarks3d = face_model.GetShape(fx, fy, cx, cy);
@@ -139,23 +145,24 @@ namespace OSC_Funcs
 		cv::Mat_<double> lEyeLandmarks3d = face_model.hierarchical_models[part_right].GetShape(fx, fy, cx, cy);
 
 		//Send landmarks to OSC
-		send_landmarks_via_osc("/openFace/faceLandmarks", userFaceLandmarks3d);
-		send_landmarks_via_osc("/openFace/rightEye", rEyeLandmarks3d);
-		send_landmarks_via_osc("/openFace/leftEye", lEyeLandmarks3d);
+		send_landmarks_via_osc(oscAddressPrefix + "faceLandmarks", userFaceLandmarks3d);
+		send_landmarks_via_osc(oscAddressPrefix + "rightEye", rEyeLandmarks3d);
+		send_landmarks_via_osc(oscAddressPrefix + "leftEye", lEyeLandmarks3d);
 
 		//Send gaze vectors
 		if (gazeDirection0 != cv::Point3f(0, 0, 0) && gazeDirection1 != cv::Point3f(0, 0, 0)) {
-			send_gaze_via_osc("/openFace/gazeVectorR", rEyeLandmarks3d, gazeDirection0);
-			send_gaze_via_osc("/openFace/gazeVectorL", lEyeLandmarks3d, gazeDirection1);
+			send_gaze_via_osc(oscAddressPrefix + "gazeVectorR", rEyeLandmarks3d, gazeDirection0);
+			send_gaze_via_osc(oscAddressPrefix + "gazeVectorL", lEyeLandmarks3d, gazeDirection1);
 		}
 
 		//Send Head Pose Vector: Position + Angle in radians (x, y, z, pitch_x, yaw_y, roll_z)
 		cv::Vec6d pose_estimate_to_draw = LandmarkDetector::GetCorrectedPoseWorld(face_model, fx, fy, cx, cy);
 
+		const char *oscAddressChar = (oscAddressPrefix + "headPose").c_str();
 		packet.Clear();
 
 		packet << osc::BeginBundleImmediate
-			<< osc::BeginMessage("/openFace/headPose");
+			<< osc::BeginMessage(oscAddressChar);
 
 		for (int i = 0; i < pose_estimate_to_draw.rows; i++) {
 			packet << (float)pose_estimate_to_draw[i];

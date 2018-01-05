@@ -35,7 +35,9 @@
 
 // FaceTrackingVidMulti.cpp : Defines the entry point for the multiple face tracking console application.
 #include "LandmarkCoreIncludes.h"
+#include "GazeEstimation.h"
 #include "OSC_Transmitter.h"
+#include "FaceAnalyser.h"
 
 #include <fstream>
 #include <sstream>
@@ -361,6 +363,8 @@ int main (int argc, char **argv)
 			// Go through every model and visualise the results
 			for(size_t model = 0; model < clnf_models.size(); ++model)
 			{
+
+				
 				// Visualising the results
 				// Drawing the facial landmarks on the face and the bounding box around it if tracking is successful and initialised
 				double detection_certainty = clnf_models[model].detection_certainty;
@@ -377,7 +381,22 @@ int main (int argc, char **argv)
 					if(detection_certainty < -1)
 						detection_certainty = -1;
 
+
+					// The actual facial landmark detection / tracking
+					bool detection_success = LandmarkDetector::DetectLandmarksInVideo(grayscale_image, depth_image, clnf_models[model], det_parameters[model]);
+
 					detection_certainty = (detection_certainty + 1)/(visualisation_boundary +1);
+
+					// Gaze tracking, absolute gaze direction
+					cv::Point3f gazeDirection0(0, 0, -1);
+					cv::Point3f gazeDirection1(0, 0, -1);
+
+					if (det_parameters[model].track_gaze && detection_success && clnf_model.eye_model)
+					{
+						FaceAnalysis::EstimateGaze(clnf_models[model], gazeDirection0, fx, fy, cx, cy, true);
+						FaceAnalysis::EstimateGaze(clnf_models[model], gazeDirection1, fx, fy, cx, cy, false);
+						FaceAnalysis::DrawGaze(disp_image, clnf_models[model], gazeDirection0, gazeDirection1, fx, fy, cx, cy);
+					}
 
 					// A rough heuristic for box around the face width
 					int thickness = (int)std::ceil(2.0* ((double)captured_image.cols) / 640.0);
@@ -389,9 +408,10 @@ int main (int argc, char **argv)
 					LandmarkDetector::DrawBox(disp_image, pose_estimate, cv::Scalar((1-detection_certainty)*255.0,0, detection_certainty*255), thickness, fx, fy, cx, cy);
 
 					//Send data over OSC
-					cv::Point3f nullVector;// = (0, 0, 0);
-					OSC_Funcs::OSC_Transmitter::SendFaceData(clnf_models[model], nullVector, nullVector, fx, fy, cx, cy, model);
+					//cv::Point3f nullVector(0,0,0);
+					OSC_Funcs::OSC_Transmitter::SendFaceData(clnf_models[model], gazeDirection0, gazeDirection1, fx, fy, cx, cy, model);
 				}
+				
 			}
 
 			// Work out the framerate
